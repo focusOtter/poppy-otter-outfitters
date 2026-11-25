@@ -60,7 +60,9 @@ export function attribute(who?: Caller): Pick<Event, 'caller' | 'actorType' | 'a
     actorType: signedIn ? 'user_agent' : 'guest_agent',
     account: signedIn ? account : undefined,
     actorSub: typeof act?.sub === 'string' ? act.sub : undefined,
-    actorClientId: act && 'client_id' in act && typeof act.client_id === 'string' ? act.client_id : undefined,
+    actorClientId: who.poppy.source === 'header'
+      ? who.poppy.agent.id
+      : act && 'client_id' in act && typeof act.client_id === 'string' ? act.client_id : undefined,
     poppySid: who.poppy.sessionId,
     agent: who.poppy.agent.id,
     sessionKey: who.poppy.key,

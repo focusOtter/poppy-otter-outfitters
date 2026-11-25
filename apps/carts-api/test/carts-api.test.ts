@@ -245,6 +245,34 @@ describe('access tokens', () => {
     expect(await response.json()).toMatchObject({ error: 'invalid_session' });
   });
 
+  test('attributes a plain CIMD token only when bound to its verified Poppy Session', async () => {
+    await start({ guestCartsEnabled: false });
+    const sub = 'auth0|cimd-customer';
+    const path = '/cart';
+    const claims = { sub, scope: 'openid cart:write' };
+    const token = await ctx.issueToken({ ...claims, client_id: ctx.agent.cimdUrl });
+    const otherToken = await ctx.issueToken({ ...claims, client_id: 'https://another.example/agent.json' });
+    expect((await ctx.request(path, { headers: { authorization: `Bearer ${token}` } })).status).toBe(400);
+    for (const [accessToken, status] of [[otherToken, 400], [token, 200]] as const) {
+      const response = await ctx.request(path, {
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'poppy-session': await ctx.sessionJwt({ htm: 'GET', path, accessToken }),
+        },
+      });
+      expect(response.status).toBe(status);
+    }
+    const entries = await ctx.activity.list({ account: sub });
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      actorType: 'user_agent',
+      account: sub,
+      actorClientId: ctx.agent.cimdUrl,
+      status: 200,
+    });
+    expect(entries[0]?.actorSub).toBeUndefined();
+  });
+
   test('a guest cart follows the agent when it signs in, and the order records placedVia', async () => {
     await start();
     const sid = 'sid-signin';

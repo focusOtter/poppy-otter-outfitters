@@ -28,6 +28,7 @@ describe('audit attribution uses only verified caller data', () => {
     const direct = attribute({ poppy: guest, account: null, cartKey: guest.key });
     expect(direct).toMatchObject({ actorType: 'guest_agent', agent: guest.agent.id, poppySid: guest.sessionId });
     expect(direct.actorSub).toBeUndefined();
+    expect(direct.actorClientId).toBe(guest.agent.id);
   });
 
   test('same session becomes a user-agent action after consent; a human stays separate', () => {

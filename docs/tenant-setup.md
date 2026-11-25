@@ -136,6 +136,14 @@ The doctor checks discovery, tenant metadata, the browser-join endpoint, scopes,
 
 To remove an agent, review `auth0 agents unregister <metadata-url> --poppy --dry-run` first. With `--poppy`, grants on other APIs are preserved; the application and agent record are removed only when no grants remain. Already-issued access tokens remain valid until expiry.
 
+### Plain CIMD without Agents as Principals
+
+When CIMD is enabled but Agents as Principals and anonymous sessions are not, Auth0 supports guest browser joins and signed-in API access through a plain CIMD client. Keep the API's existing user authorization policy and define the scopes in the resource server's API settings. With the sample's `user.policy: allow_all`, Playground can request the advertised scopes in customer consent; it does not need an Auth0 Agent registration or a separate client grant. The API still must allowlist its exact CIMD URL in `POPPY_AGENTS`.
+
+The beta `poppy setup` CLI does not skip the two unavailable fields. After reviewing the dry run and approving the change, patch only `{"use_for_personal_agent_protocol":true}` on the resource server and enable `allow_personal_agent_browser_join` on the storefront. Confirm the other tenant, scope and login URI settings from the dry run first. Run `auth0 poppy config` with the API and storefront and `--web-unscoped=false`, then deploy that generated file with `POPPY_JSON_B64`. This beta doctor may still flag `agent_subject_claims` and the anonymous API policy; do not enable either just to clear the check.
+
+Leave `GUEST_CARTS_ENABLED=0`: a Poppy guest browser can read the public catalog, but cannot get a guest API access token for a cart. A direct agent API call must carry a verified `Poppy-Session`. With a customer token, the SDK verifies that its client matches the Session's CIMD issuer; the audit log records that issuer as the agent client ID even when there is no `act` claim. Never treat an unbound CIMD access token or an unsigned client ID as an agent identity.
+
 ## Updating your configuration
 
 If Auth0 rejects anonymous session settings with HTTP 403, use `--skip-anonymous` for the base provisioner and set `GUEST_CARTS_ENABLED=0` on both deployed apps. The storefront catalog, search, and product pages stay public, as do `GET /products` and `GET /products/{id}`; none requires an anonymous session or an API access token. A guest agent can browse with only OIDC tokens, but must ask the customer to sign in and approve `cart:write` before opening a cart. Poppy setup is a separate CLI step and may propose the same unavailable API guest policy.
