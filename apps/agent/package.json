@@ -1,0 +1,15 @@
+{
+  "name": "otter-outfitters-agent",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --import ../carts-api/node_modules/tsx/dist/loader.mjs --test"
+  },
+  "dependencies": {
+    "ai": "^6.0.336",
+    "jose": "^6.2.18"
+  }
+}
