@@ -19,7 +19,7 @@ const issuer = 'https://' + domain + '/';
 const account = 'auth0|lab-customer';
 const human = 'lab-storefront';
 
-async function lab(t, { guestCartsEnabled = true } = {}) {
+async function lab(t, { guestCartsEnabled = true, audience = api } = {}) {
   const agentKeys = await generateKeyPair('ES256', { extractable: true });
   const identity = await createIdentity('https://agent.example.com', await exportJWK(agentKeys.privateKey));
   const tenant = await generateKeyPair('RS256');
@@ -31,7 +31,7 @@ async function lab(t, { guestCartsEnabled = true } = {}) {
   };
   const issueToken = (azp, scope) => new SignJWT({ azp, scope })
     .setProtectedHeader({ alg: 'RS256', kid: tenantJwk.kid, typ: 'at+jwt' })
-    .setIssuer(issuer).setAudience(api).setSubject(account).setIssuedAt().setExpirationTime('5m').sign(tenant.privateKey);
+    .setIssuer(issuer).setAudience(audience).setSubject(account).setIssuedAt().setExpirationTime('5m').sign(tenant.privateKey);
   let challenge;
   let scopes;
   let exchanged = 0;
@@ -69,7 +69,7 @@ async function lab(t, { guestCartsEnabled = true } = {}) {
     throw Error('Unexpected lab network destination.');
   };
   const apiClient = new ApiClient({
-    domain, audience: api, customFetch: fetcher,
+    domain, audience, customFetch: fetcher,
     poppy: {
       verifySession: true, publicOrigin: api, agents: [identity.clientId],
       sessionStore: new MemoryPoppySessionStore(), agentMetadata: { fetch: fetcher },
@@ -84,12 +84,13 @@ async function lab(t, { guestCartsEnabled = true } = {}) {
   });
   t.after(() => server.close());
   const local = 'http://127.0.0.1:' + server.address().port;
-  const company = await discover({ store, api, issuer, fetcher });
+  const company = await discover({ store, api, issuer, audience, fetcher });
   const session = await createSession(identity, issuer, 'fixture-not-a-production-secret-0000');
 
   async function consent(shop) {
-    const transaction = await startSignIn(company, identity, shop.scopesToRequest, { audience: api, fetcher });
+    const transaction = await startSignIn(company, identity, shop.scopesToRequest, { fetcher });
     const { searchParams } = transaction.url;
+    assert.equal(searchParams.get('audience'), audience);
     assert.equal(searchParams.get('code_challenge_method'), 'S256');
     assert.equal(searchParams.get('redirect_uri'), 'https://agent.example.com/callback');
     challenge = searchParams.get('code_challenge');
@@ -129,6 +130,15 @@ test('local API verifies this agent, preserves its guest cart after PKCE approva
   assert.equal((await req('/cart')).status, 200);
   const activity = await (await req('/activity')).json();
   assert.deepEqual(activity.entries.slice(0, 3).map((row) => row.actorType), ['user', 'user_agent', 'guest_agent']);
+});
+
+test('direct consent uses the Auth0 API identifier while shopping uses the public API origin', async (t) => {
+  const ctx = await lab(t, { audience: 'https://resources.example.com/carts', guestCartsEnabled: false });
+  const shop = createShop(ctx.company, ctx.session, { fetcher: ctx.fetcher });
+  const item = { productId: 'eddy-rolltop', quantity: 1 };
+  assert.deepEqual(await shop.call('setCartItem', item), { signInRequired: true, scope: 'cart:write' });
+  await ctx.consent(shop);
+  assert.equal((await shop.call('setCartItem', item)).status, 200);
 });
 
 test('the HTTPS approval page clears the callback URL and forwards only single OAuth response fields to loopback', async () => {

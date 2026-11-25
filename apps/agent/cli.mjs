@@ -86,7 +86,12 @@ async function main() {
   const prompt = args.slice(allowCheckout ? 1 : 0).join(' ').trim();
   if (!prompt) throw Error('Supply a shopping request.');
   const api = required('AGENT_API_ORIGIN');
-  const company = await discover({ store: required('AGENT_STORE_ORIGIN'), api, issuer: required('AGENT_ISSUER') });
+  const company = await discover({
+    store: required('AGENT_STORE_ORIGIN'),
+    api,
+    issuer: required('AGENT_ISSUER'),
+    audience: process.env.AGENT_API_AUDIENCE || undefined,
+  });
   const shop = createShop(company, await createSession(identity, company.issuer, required('AGENT_PAIRWISE_SECRET')), {
     allowCheckout,
     onResponse: ({ method, path, status }) => console.log(`${method} ${path}: HTTP ${status}`),
@@ -95,7 +100,7 @@ async function main() {
   await runShopping(shop, {
     prompt,
     model: gateway(process.env.AGENT_MODEL || defaultModel),
-    approve: async scopes => approve(await startSignIn(company, identity, scopes, { audience: api })),
+    approve: async scopes => approve(await startSignIn(company, identity, scopes)),
   });
   console.log('Agent: finished');
 }

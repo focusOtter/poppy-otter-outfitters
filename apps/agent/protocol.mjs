@@ -64,7 +64,7 @@ async function json(fetcher, url) {
   return res.json();
 }
 
-export async function discover({ store, api, issuer, fetcher = fetch }) {
+export async function discover({ store, api, issuer, audience = api, fetcher = fetch }) {
   store = originOf(store);
   api = originOf(api);
   const issuerOrigin = originOf(issuer);
@@ -87,7 +87,7 @@ export async function discover({ store, api, issuer, fetcher = fetch }) {
   if (!openapi.openapi?.startsWith('3.') || !openapi.servers?.some(({ url }) => url === api)) {
     throw Error('OpenAPI does not describe the configured Carts API.');
   }
-  return { issuer, issuerOrigin, api, openapi, authorization, signInEnabled: poppy.auth?.disabled !== true };
+  return { issuer, issuerOrigin, api, audience, openapi, authorization, signInEnabled: poppy.auth?.disabled !== true };
 }
 
 export async function createSession(identity, issuer, pairwiseSecret) {
@@ -137,7 +137,7 @@ async function createDpopKey() {
   };
 }
 
-export async function startSignIn(company, identity, scopes, { audience, fetcher = fetch } = {}) {
+export async function startSignIn(company, identity, scopes, { audience = company.audience, fetcher = fetch } = {}) {
   const { issuer, issuerOrigin, authorization } = company;
   const [redirectUri] = identity.metadata.redirect_uris;
   if (!company.signInEnabled || !authorization.grant_types_supported?.includes('authorization_code')) {
