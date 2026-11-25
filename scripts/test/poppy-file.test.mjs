@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { PoppyConfigError, checkPoppyFile, configFromEnv, ensurePoppyFile, storeDomain } from '../../apps/web/scripts/poppy-file.mjs';
+import { PoppyConfigError, checkPoppyFile, configFromEnv, ensurePoppyFile, installPoppyFileFromBuildEnv, storeDomain } from '../../apps/web/scripts/poppy-file.mjs';
 
 const EXAMPLE = fileURLToPath(new URL('../../apps/web/poppy.example.json', import.meta.url));
 const example = () => JSON.parse(readFileSync(EXAMPLE, 'utf8'));
@@ -31,6 +31,27 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 const read = () => JSON.parse(readFileSync(join(dir, 'poppy.json'), 'utf8'));
+
+test('build config replaces a local copy with the exact encoded CLI document', () => {
+  const file = join(dir, 'poppy.json');
+  writeFileSync(file, '{}');
+  const cli = `${JSON.stringify(cliFile(), null, 4)}\n`;
+  installPoppyFileFromBuildEnv(dir, Buffer.from(cli).toString('base64'));
+  assert.equal(ensurePoppyFile({ dir, env: ENV }).action, 'kept');
+  assert.equal(readFileSync(file, 'utf8'), cli);
+});
+
+test('invalid encoded build config fails without replacing the existing file or echoing input', () => {
+  const file = join(dir, 'poppy.json');
+  writeFileSync(file, '{}');
+  for (const value of ['invalid-encoded-config', Buffer.from('{}').toString('base64')]) {
+    assert.throws(() => installPoppyFileFromBuildEnv(dir, value), {
+      name: 'PoppyConfigError',
+      message: 'POPPY_JSON_B64 does not contain a valid Poppy discovery document.',
+    });
+    assert.equal(readFileSync(file, 'utf8'), '{}');
+  }
+});
 
 describe('ensurePoppyFile', () => {
   test("keeps the CLI's file byte for byte, whatever the environment says", () => {

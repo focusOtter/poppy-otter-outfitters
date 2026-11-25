@@ -20,7 +20,7 @@ Choose the tenant for this sample. Tenant settings can affect other applications
 ## 2. Create the API and application
 
 ```sh
-auth0 quickstarts setup --app --api --type regular --framework nextjs --name "Drift Bean Storefront" \
+auth0 quickstarts setup --app --api --type regular --framework nextjs --name "Otter Outfitters Storefront" \
   --identifier http://localhost:4000 --scopes "cart:write,orders:read,orders:write" \
   --offline-access --signing-alg RS256 --port 3000
 ```
@@ -75,8 +75,8 @@ Real agents need public HTTPS URLs for both apps. Use your deployment URLs, or [
 ```sh
 auth0 poppy setup \
   --company-domain store.example.com \
-  --company-name Drift Bean Demo \
-  --app "Drift Bean Storefront" \
+  --company-name "Otter Outfitters" \
+  --app "Otter Outfitters Storefront" \
   --api http://localhost:4000 \
   --api-url http://localhost:4000=https://api.example.com/openapi.json \
   --login-uri https://store.example.com/auth/login \

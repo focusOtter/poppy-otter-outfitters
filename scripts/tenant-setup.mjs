@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Configures an Auth0 tenant for the Drift Bean Demo store through the Management API.
+// Configures the Otter Outfitters Auth0 tenant through the Management API.
 //
 //   npm run tenant                                  dry run on the Auth0 CLI's active tenant: prints the plan
 //   npm run tenant -- --domain T.auth0.com          dry run on tenant T
@@ -43,8 +43,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 // ---------------------------------------------------------------------------------------------------------------
 // What the store needs. These are the settings the store needs (see docs/tenant-setup.md).
 
-export const API_NAME = 'Drift Bean Carts API';
-export const APP_NAME = 'Drift Bean Storefront';
+export const API_NAME = 'Otter Outfitters Carts API';
+export const APP_NAME = 'Otter Outfitters Storefront';
 export const DEFAULT_AUDIENCE = 'http://localhost:4000';
 export const DEFAULT_AGENT = 'https://poppyplayground.dev/agent.json';
 export const LOCAL_STORE = 'http://localhost:3000';
@@ -82,7 +82,7 @@ export const MGMT_SCOPES = [
 const WRITE_ENV_SCOPE = 'read:client_keys';
 export const TRANSPORTS = ['cli', 'm2m'];
 
-const HELP = `Configure an Auth0 tenant for the Drift Bean Demo store (Management API). Dry run unless --yes.
+const HELP = `Configure an Auth0 tenant for Otter Outfitters (Management API). Dry run unless --yes.
 
 Usage: npm run tenant -- [options]        (or: node scripts/tenant-setup.mjs [options])
 
@@ -846,7 +846,7 @@ export async function run({ argv, env, root, stdout = process.stdout, stderr = p
 
   // The first line names the tenant that is about to be used.
   const via = cfg.transport === 'cli' ? `Auth0 CLI login${cfg.tenantSource === 'cli-active' && cfg.host ? ", the CLI's active tenant; pass --domain to choose another" : ''}` : 'M2M app';
-  log(`Drift Bean Demo tenant setup for ${cfg.host ?? '(no tenant)'} (${via})${cfg.yes ? '' : ' (dry run: nothing is changed; add --yes to apply)'}`);
+  log(`Otter Outfitters tenant setup for ${cfg.host ?? '(no tenant)'} (${via})${cfg.yes ? '' : ' (dry run: nothing is changed; add --yes to apply)'}`);
   log();
 
   let request;

@@ -1,6 +1,7 @@
 // Makes sure apps/web/poppy.json exists before `next dev` (predev), `next build` (--build) and `tsc` (--typecheck).
 // lib/auth0.ts imports it and hands it to the SDK as it is. The rules live in poppy-file.mjs:
 //
+//   POPPY_JSON_B64 on a build                                          ->  decoded into apps/web/poppy.json
 //   apps/web/poppy.json (from `auth0 poppy setup`, or written earlier)  ->  kept as it is
 //   else AUTH0_DOMAIN + AUTH0_CLIENT_ID (+ APP_BASE_URL / POPPY_DOMAIN)   ->  written, so a hosted build works
 //   else, with --typecheck only                                         ->  poppy.example.json copied, for the types
@@ -9,7 +10,7 @@
 // next.config.ts loads. Exit 1 with a FIX: line when it can't produce a file.
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { PoppyConfigError, ensurePoppyFile } from "./poppy-file.mjs";
+import { PoppyConfigError, ensurePoppyFile, installPoppyFileFromBuildEnv } from "./poppy-file.mjs";
 
 const webDir = fileURLToPath(new URL("..", import.meta.url)).replace(/\/$/, "");
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
@@ -27,6 +28,7 @@ try {
 }
 
 try {
+  if (process.argv.includes("--build")) installPoppyFileFromBuildEnv(webDir, process.env.POPPY_JSON_B64);
   const { action, config } = ensurePoppyFile({ dir: webDir, env: process.env, typecheck });
   const where = `for ${config.organization?.domain || "the store"} (issuer ${config.auth?.issuer})`;
   if (action === "kept") console.log(`apps/web/poppy.json is in place ${where}.`);

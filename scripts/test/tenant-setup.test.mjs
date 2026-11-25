@@ -93,7 +93,7 @@ describe('planApp', () => {
   test('creates with everything set', () => {
     const plan = planApp(undefined, ['https://a.test']);
     assert.equal(plan.action, 'create');
-    assert.equal(plan.body.name, 'Drift Bean Storefront');
+    assert.equal(plan.body.name, 'Otter Outfitters Storefront');
     assert.deepEqual(plan.body.anonymous_sessions, { active: true });
     assert.equal(plan.body.initiate_login_uri, 'https://a.test/auth/login');
   });
@@ -377,7 +377,7 @@ describe('tenant-setup against a fake tenant', () => {
     const first = await exec('--yes', '--store-url', 'https://shop.example.com');
     assert.equal(first.code, 0, first.out);
     const { apis, clients, grants, connections } = fake.state;
-    assert.equal(apis[0].name, 'Drift Bean Carts API');
+    assert.equal(apis[0].name, 'Otter Outfitters Carts API');
     assert.deepEqual(apis[0].subject_type_authorization.anonymous_user, { policy: 'require_client_grant' });
     assert.equal(clients[0].app_type, 'regular_web');
     assert.deepEqual(clients[0].callbacks, ['https://shop.example.com/auth/callback'], 'no localhost without --local');
@@ -446,7 +446,7 @@ describe('tenant-setup against a fake tenant', () => {
     assert.equal(agent.require_proof_of_possession, true);
     assert.deepEqual(fake.state.apis[0].proof_of_possession, { mechanism: 'dpop', required: false });
     assert.deepEqual(fake.state.grants.find((g) => g.client_id === agent.client_id).scope, ALL, 'no poppy:browser-sign-in unless asked');
-    assert.equal(fake.state.clients.find((c) => c.name === 'Drift Bean Storefront').allow_personal_agent_browser_join, true);
+    assert.equal(fake.state.clients.find((c) => c.name === 'Otter Outfitters Storefront').allow_personal_agent_browser_join, true);
     fake.state.mutations.length = 0;
     assert.equal((await exec(...args)).code, 0);
     assert.deepEqual(fake.state.mutations, []);
@@ -585,7 +585,7 @@ describe('tenant-setup through the Auth0 CLI', () => {
   test('a dry run with no --domain names the CLI\'s active tenant on the first line, passes --tenant on every call, and changes nothing', async () => {
     const { code, out, err } = await exec([]);
     assert.equal(code, 0, out + err);
-    assert.match(out.split('\n')[0], new RegExp(`^Drift Bean Demo tenant setup for ${ACTIVE} .*active tenant.*dry run`));
+    assert.match(out.split('\n')[0], new RegExp(`^Otter Outfitters tenant setup for ${ACTIVE} .*active tenant.*dry run`));
     assert.deepEqual(fake.state.mutations, []);
     assert.match(out, /^\+ api: .*would create/m);
     assert.match(out, /^\+ app: .*would create/m);
@@ -600,12 +600,12 @@ describe('tenant-setup through the Auth0 CLI', () => {
   test('--domain wins over the active tenant, and an unknown --domain is a failed sign-in with a FIX line', async () => {
     const { code, out } = await exec(['--domain', HOST]);
     assert.equal(code, 0, out);
-    assert.match(out.split('\n')[0], new RegExp(`^Drift Bean Demo tenant setup for ${HOST} \\(Auth0 CLI login\\) \\(dry run`));
+    assert.match(out.split('\n')[0], new RegExp(`^Otter Outfitters tenant setup for ${HOST} \\(Auth0 CLI login\\) \\(dry run`));
     for (const args of apiCalls()) assert.equal(args[args.indexOf('--tenant') + 1], HOST);
 
     const unknown = await exec(['--domain', 'nope.invalid']);
     assert.equal(unknown.code, 1);
-    assert.match(unknown.out, /^Drift Bean Demo tenant setup for nope\.invalid/);
+    assert.match(unknown.out, /^Otter Outfitters tenant setup for nope\.invalid/);
     assert.match(unknown.out, /^✗ auth: .*not logged in to nope\.invalid/m);
     assert.match(unknown.out, /FIX: .*auth0 login/);
   });
@@ -614,9 +614,9 @@ describe('tenant-setup through the Auth0 CLI', () => {
     const args = ['--domain', HOST, '--yes', '--write-env', '--store-url', 'https://shop.example.com'];
     const first = await exec(args);
     assert.equal(first.code, 0, first.out + first.err);
-    assert.match(first.out.split('\n')[0], new RegExp(`^Drift Bean Demo tenant setup for ${HOST} `));
+    assert.match(first.out.split('\n')[0], new RegExp(`^Otter Outfitters tenant setup for ${HOST} `));
     const { apis, clients, grants, connections } = fake.state;
-    assert.equal(apis[0].name, 'Drift Bean Carts API');
+    assert.equal(apis[0].name, 'Otter Outfitters Carts API');
     assert.deepEqual(grants.map((g) => [g.subject_type, g.scope.join(' ')]), [['user', 'cart:write orders:read orders:write'], ['anonymous_user', 'cart:write']]);
     assert.deepEqual(connections[0].enabled, [clients[0].client_id]);
     assert.match(readFileSync(join(tmp, '.env.local'), 'utf8'), new RegExp(`^AUTH0_CLIENT_SECRET=${CLIENT_SECRET}$`, 'm'), 'the secret was fetched with --reveal-secrets');

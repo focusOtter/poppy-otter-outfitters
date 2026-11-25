@@ -95,6 +95,23 @@ export function configFromEnv(example, env) {
 
 const serialize = (config) => `${JSON.stringify(config, null, 2)}\n`;
 
+export function installPoppyFileFromBuildEnv(dir, encoded) {
+  if (!encoded) return;
+  const invalid = () => new PoppyConfigError(
+    "POPPY_JSON_B64 does not contain a valid Poppy discovery document.",
+    "Set it to the base64 encoding of the poppy.json written by Auth0 CLI."
+  );
+  const bytes = Buffer.from(encoded, "base64");
+  if (bytes.toString("base64") !== encoded) throw invalid();
+  try {
+    const doc = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (isPlaceholder(checkPoppyFile(doc))) throw invalid();
+  } catch {
+    throw invalid();
+  }
+  writeFileSync(`${dir}/poppy.json`, bytes);
+}
+
 /**
  * Makes sure `<dir>/poppy.json` exists. A file written by the CLI (or by hand) is kept as it is; one that still holds
  * the example's placeholders, or none at all, is written from the environment. With `typecheck`, a missing environment

@@ -6,7 +6,7 @@ Start with `auth0 poppy doctor <your store host>`. It checks your discovery file
 
 | You see | Why | Fix |
 |---|---|---|
-| `unauthorized_client: Callback URL mismatch` on login | The URL you're browsing isn't in the app's Allowed Callback URLs | Add `<URL>/auth/callback` to the app's callbacks: `auth0 apps update "Drift Bean Storefront" --callbacks ...` (keep the existing ones), or use the Dashboard (**Applications → your app → Settings**) |
+| `unauthorized_client: Callback URL mismatch` on login | The URL you're browsing isn't in the app's Allowed Callback URLs | Add `<URL>/auth/callback` to the app's callbacks: `auth0 apps update "Otter Outfitters Storefront" --callbacks ...` (keep the existing ones), or use the Dashboard (**Applications → your app → Settings**) |
 | `unauthorized_client: The client does not support anonymous sessions` when you add to the cart signed out | Guest carts need three settings and the error names none of them | Follow [guest-cart provisioning](tenant-setup.md) for the app's `anonymous_sessions`, the API's `anonymous_user` policy and the anonymous client grant. `npm run tenant` previews the sample's settings; apply only after reviewing them. Poppy setup alone does not provision guest carts |
 | Login goes to the wrong tenant after you edited `.env.local` | The servers read `.env.local` once, at start | Restart `npm run dev` |
 | `access_denied` or "service not found" after login | The storefront isn't authorized for the API | `auth0 quickstarts setup --app --api ...`, or authorize it on the API's **Application Access** tab |
