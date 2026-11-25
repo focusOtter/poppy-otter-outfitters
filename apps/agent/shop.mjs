@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { jsonSchema, stepCountIs, tool, ToolLoopAgent } from 'ai';
+import { gateway, jsonSchema, stepCountIs, tool, ToolLoopAgent } from 'ai';
 import { fetchRequest } from './protocol.mjs';
 
 const catalog = [
@@ -59,7 +59,9 @@ function requestFor(operation, input, api) {
   return { url, body };
 }
 
-export function createShop(company, session, { allowCheckout = false, fetcher = fetch } = {}) {
+export const defaultModel = 'anthropic/claude-haiku-4.5';
+
+export function createShop(company, session, { allowCheckout = false, fetcher = fetch, onResponse } = {}) {
   const operations = new Map();
   for (const [name, method, path, scope] of catalog) {
     const op = company.openapi.paths?.[path]?.[method.toLowerCase()];
@@ -103,6 +105,7 @@ export function createShop(company, session, { allowCheckout = false, fetcher = 
         headers.DPoP = await authorization.dpop.proof(method, url, { token, serverNonce: dpopNonce });
       }
       response = await fetchRequest(fetcher, url, init);
+      onResponse?.({ method, path: operation.path, status: response.status });
       const nextNonce = response.headers.get('dpop-nonce');
       if (nextNonce) dpopNonce = nextNonce;
       if (!token || !authorization.dpop || !nextNonce || response.status !== 401 ||
@@ -148,4 +151,21 @@ export function shoppingAgent(shop, model) {
     tools,
     stopWhen: [stepCountIs(8), () => shop.scopesToRequest.length > 0],
   });
+}
+
+export async function runShopping(shop, { prompt, model = gateway(defaultModel), approve }) {
+  const agent = shoppingAgent(shop, model);
+  const messages = [{ role: 'user', content: prompt }];
+  const results = [];
+  for (let approvals = 0; ; approvals++) {
+    const result = await agent.generate({ messages });
+    results.push(result);
+    const scopes = shop.scopesToRequest;
+    if (scopes.length === 0) return results;
+    if (approvals === 3) throw Error('The task still needs approval; no further requests were sent.');
+    messages.push(...result.response.messages);
+    shop.authorize(await approve(scopes));
+    messages.push({ role: 'user', content: 'I approved the requested scope. Continue the original task. ' +
+      'If a tool paused for approval, retry that operation; it did not finish.' });
+  }
 }

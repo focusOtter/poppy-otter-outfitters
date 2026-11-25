@@ -43,8 +43,9 @@ export async function createIdentity(origin, jwk) {
   const metadata = {
     client_id: clientId,
     client_name: 'Otter Outfitters Shopping Agent',
+    application_type: 'web',
     jwks_uri: origin + '/jwks.json',
-    redirect_uris: [callbackUrl],
+    redirect_uris: [origin + '/callback'],
     token_endpoint_auth_method: 'private_key_jwt',
     token_endpoint_auth_signing_alg: algorithm,
     grant_types: ['authorization_code', 'refresh_token'],
@@ -138,6 +139,7 @@ async function createDpopKey() {
 
 export async function startSignIn(company, identity, scopes, { audience, fetcher = fetch } = {}) {
   const { issuer, issuerOrigin, authorization } = company;
+  const [redirectUri] = identity.metadata.redirect_uris;
   if (!company.signInEnabled || !authorization.grant_types_supported?.includes('authorization_code')) {
     throw Error('This company does not advertise direct agent sign-in.');
   }
@@ -158,7 +160,7 @@ export async function startSignIn(company, identity, scopes, { audience, fetcher
     throw Error('Direct sign-in needs only API scopes.');
   }
   const params = new URLSearchParams({
-    response_type: 'code', client_id: identity.clientId, redirect_uri: callbackUrl, scope: [...scopeSet].join(' '),
+    response_type: 'code', client_id: identity.clientId, redirect_uri: redirectUri, scope: [...scopeSet].join(' '),
     state, code_challenge: digest(verifier), code_challenge_method: 'S256', prompt: 'consent',
     ...(audience ? { audience } : {}),
     ...(dpop ? { dpop_jkt: dpop.thumbprint } : {}),
@@ -202,7 +204,7 @@ export async function startSignIn(company, identity, scopes, { audience, fetcher
         throw Error('Agent sign-in was not approved.');
       }
       const data = await post(tokenEndpoint, new URLSearchParams({
-        grant_type: 'authorization_code', client_id: identity.clientId, code, code_verifier: verifier, redirect_uri: callbackUrl,
+        grant_type: 'authorization_code', client_id: identity.clientId, code, code_verifier: verifier, redirect_uri: redirectUri,
       }));
       const granted = data.scope === undefined ? [...scopeSet] : typeof data.scope === 'string' ? data.scope.split(/ +/).filter(Boolean) : [];
       const tokenType = typeof data.token_type === 'string' && data.token_type.toLowerCase();

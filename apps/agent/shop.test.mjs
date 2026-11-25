@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { MockLanguageModelV3 } from 'ai/test';
 import { decodeJwt, exportJWK, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import { createApp } from '../carts-api/src/app.ts';
 import { OUTFITTERS } from '../carts-api/src/outfitters.ts';
 import { MemoryPoppySessionStore } from '../carts-api/src/storage/memory.ts';
 import { callbackUrl, createIdentity, createSession, digest, discover, startSignIn } from './protocol.mjs';
-import { createShop, shoppingAgent } from './shop.mjs';
+import { createShop, runShopping, shoppingAgent } from './shop.mjs';
 
 const { ApiClient } = createRequire(new URL('../carts-api/package.json', import.meta.url))('@auth0/auth0-api-js');
 const store = 'https://store.example.com';
@@ -51,7 +53,7 @@ async function lab(t, { guestCartsEnabled = true } = {}) {
     if (url.href === tenantMetadata.token_endpoint) {
       assert.equal(init.redirect, 'error');
       const body = init.body;
-      assert.equal(body.get('redirect_uri'), callbackUrl);
+      assert.equal(body.get('redirect_uri'), 'https://agent.example.com/callback');
       assert.equal(body.get('grant_type'), 'authorization_code');
       assert.equal(body.get('code'), 'lab-grant');
       assert.equal(digest(body.get('code_verifier')), challenge);
@@ -89,10 +91,12 @@ async function lab(t, { guestCartsEnabled = true } = {}) {
     const transaction = await startSignIn(company, identity, shop.scopesToRequest, { audience: api, fetcher });
     const { searchParams } = transaction.url;
     assert.equal(searchParams.get('code_challenge_method'), 'S256');
+    assert.equal(searchParams.get('redirect_uri'), 'https://agent.example.com/callback');
     challenge = searchParams.get('code_challenge');
     scopes = searchParams.get('scope');
     const cb = new URL(callbackUrl);
     cb.search = new URLSearchParams({ state: searchParams.get('state'), iss: issuer, code: 'lab-grant' });
+    await assert.rejects(transaction.complete(new URL(cb.search, identity.metadata.redirect_uris[0])), /unexpected/i);
     const wrong = new URL(cb);
     wrong.searchParams.set('iss', 'https://wrong.example.com/');
     await assert.rejects(transaction.complete(wrong), /unexpected/i);
@@ -104,6 +108,8 @@ async function lab(t, { guestCartsEnabled = true } = {}) {
 
 test('local API verifies this agent, preserves its guest cart after PKCE approval, and separates activity', async (t) => {
   const ctx = await lab(t);
+  assert.equal(ctx.identity.metadata.application_type, 'web');
+  assert.deepEqual(ctx.identity.metadata.redirect_uris, ['https://agent.example.com/callback']);
   assert.equal('d' in ctx.identity.jwks.keys[0], false);
   const shop = createShop(ctx.company, ctx.session, { allowCheckout: true, fetcher: ctx.fetcher });
   const cart = await shop.call('setCartItem', { productId: 'eddy-rolltop', quantity: 2 });
@@ -125,6 +131,35 @@ test('local API verifies this agent, preserves its guest cart after PKCE approva
   assert.deepEqual(activity.entries.slice(0, 3).map((row) => row.actorType), ['user', 'user_agent', 'guest_agent']);
 });
 
+test('the HTTPS approval page clears the callback URL and forwards only single OAuth response fields to loopback', async () => {
+  const html = await readFile(new URL('./public/callback.html', import.meta.url), 'utf8');
+  const script = html.match(/<script>([\s\S]+)<\/script>/)[1];
+  function forward(search) {
+    const calls = [];
+    const status = {};
+    runInNewContext(script, {
+      URL, URLSearchParams,
+      location: { search, pathname: '/callback', replace: (href) => calls.push(href) },
+      history: { replaceState: (_state, _title, path) => calls.push(path) },
+      document: { getElementById: () => status },
+    });
+    return { calls, status };
+  }
+  const valid = '?code=lab-grant&state=lab-state&iss=https%3A%2F%2Fissuer.example.com%2F&next=https%3A%2F%2Fother.example.com';
+  const success = forward(valid);
+  assert.equal(success.calls[0], '/callback');
+  const target = new URL(success.calls[1]);
+  assert.equal(target.origin + target.pathname, callbackUrl);
+  assert.deepEqual(Object.fromEntries(target.searchParams), { code: 'lab-grant', state: 'lab-state', iss: issuer });
+  const declined = forward('?error=access_denied&state=lab-state&iss=https%3A%2F%2Fissuer.example.com%2F');
+  assert.equal(new URL(declined.calls[1]).searchParams.get('error'), 'access_denied');
+  for (const invalid of [valid + '&code=duplicate', valid + '&error=access_denied', '?code=lab-grant']) {
+    const failure = forward(invalid);
+    assert.deepEqual(failure.calls, ['/callback']);
+    assert.match(failure.status.textContent, /No valid approval response/);
+  }
+});
+
 test('the AI SDK tool loop browses and stops at the signed-in-only cart challenge', async (t) => {
   const ctx = await lab(t, { guestCartsEnabled: false });
   const shop = createShop(ctx.company, ctx.session, { fetcher: ctx.fetcher });
@@ -144,6 +179,48 @@ test('the AI SDK tool loop browses and stops at the signed-in-only cart challeng
   assert.deepEqual(result.steps[1].toolResults[0].output, { signInRequired: true, scope: 'cart:write' });
   await ctx.consent(shop);
   assert.equal((await shop.call('setCartItem', { productId: 'eddy-rolltop', quantity: 1 })).status, 200);
+});
+
+test('the shopping loop keeps earlier tool results across cart and checkout approvals', async (t) => {
+  const ctx = await lab(t, { guestCartsEnabled: false });
+  const requests = [];
+  const shop = createShop(ctx.company, ctx.session, {
+    allowCheckout: true, fetcher: ctx.fetcher, onResponse: entry => requests.push(entry),
+  });
+  const item = { productId: 'eddy-rolltop', quantity: 1 };
+  const usage = { inputTokens: { total: 10 }, outputTokens: { total: 5 } };
+  const call = (toolCallId, toolName, input = {}) => ({
+    content: [{ type: 'tool-call', toolCallId, toolName, input: JSON.stringify(input) }],
+    finishReason: { unified: 'tool-calls', raw: undefined }, usage, warnings: [],
+  });
+  const model = new MockLanguageModelV3({
+    doGenerate: [
+      call('catalog', 'listProducts'), call('cart-challenge', 'setCartItem', item),
+      call('cart-write', 'setCartItem', item), call('order-challenge', 'placeOrder'),
+      call('order-write', 'placeOrder'),
+      { content: [{ type: 'text', text: 'Done.' }], finishReason: { unified: 'stop', raw: undefined }, usage, warnings: [] },
+    ],
+  });
+  const approved = [];
+  const results = await runShopping(shop, {
+    prompt: 'Find the Eddy dry bag and place one simulated order.',
+    model,
+    approve: async scopes => {
+      approved.push(scopes);
+      return { token: await ctx.issueToken(ctx.identity.clientId, scopes.join(' ')), scopes: new Set(scopes) };
+    },
+  });
+  assert.deepEqual(approved, [['cart:write'], ['cart:write', 'orders:write']]);
+  const afterSecondApproval = model.doGenerateCalls[4].prompt.flatMap(message => message.content);
+  assert.deepEqual(afterSecondApproval.filter(part => part?.type === 'tool-result').map(part => part.toolCallId),
+    ['catalog', 'cart-challenge', 'cart-write', 'order-challenge']);
+  assert.deepEqual(requests, [
+    { method: 'GET', path: '/products', status: 200 },
+    { method: 'POST', path: '/cart/items', status: 401 },
+    { method: 'POST', path: '/cart/items', status: 200 },
+    { method: 'POST', path: '/orders', status: 201 },
+  ]);
+  assert.equal(results[2].steps[0].toolResults[0].output.data.placedVia, ctx.identity.clientId);
 });
 
 test('request proof omits query, binds an access token, and preserves the cart Session across calls', async (t) => {

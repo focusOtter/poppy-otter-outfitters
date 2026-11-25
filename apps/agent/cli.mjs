@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { gateway } from 'ai';
 import { callbackUrl, createIdentity, createSession, discover, startSignIn } from './protocol.mjs';
-import { createShop, shoppingAgent } from './shop.mjs';
+import { createShop, defaultModel, runShopping } from './shop.mjs';
 
 async function listen(server, port, host) {
   await new Promise((resolve, reject) => {
@@ -12,7 +13,16 @@ async function listen(server, port, host) {
 }
 
 async function publish(identity) {
+  const callback = await readFile(new URL('./public/callback.html', import.meta.url));
   const server = createServer((req, res) => {
+    if (req.method === 'GET' && req.url?.split('?')[0] === '/callback') {
+      return res.writeHead(200, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'referrer-policy': 'no-referrer',
+        'x-frame-options': 'DENY',
+      }).end(callback);
+    }
     const body = req.url === '/agent.json' ? identity.metadata : req.url === '/jwks.json' ? identity.jwks : undefined;
     if (!body || req.method !== 'GET') return res.writeHead(404).end();
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' });
@@ -30,7 +40,8 @@ async function approve(transaction) {
     if (req.method !== 'GET' || url.pathname !== local.pathname) return res.writeHead(404).end();
     try {
       const grant = await transaction.complete(url);
-      res.end('Agent approved. Return to the terminal.');
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+      res.end('<!doctype html><title>Agent approved</title><script>history.replaceState(null,"",location.pathname)</script><p>Agent approved. Return to the terminal.</p>');
       resolve(grant);
     } catch (error) {
       res.writeHead(400).end('Approval was declined or could not be verified.');
@@ -45,11 +56,14 @@ async function approve(transaction) {
     const browser = spawn(open, [transaction.url.href], { stdio: 'ignore' });
     browser.once('error', () => reject(Error('Could not open the approval browser.')));
     browser.once('exit', (code) => { if (code) reject(Error('Could not open the approval browser.')); });
-    console.log('Approve the requested scopes in your browser to let the shopping agent continue.');
+    console.log('Approval: waiting for browser');
     return await promise;
   } finally {
     clearTimeout(timer);
-    server.close();
+    await new Promise(resolve => {
+      server.close(resolve);
+      server.closeAllConnections();
+    });
   }
 }
 
@@ -73,20 +87,17 @@ async function main() {
   if (!prompt) throw Error('Supply a shopping request.');
   const api = required('AGENT_API_ORIGIN');
   const company = await discover({ store: required('AGENT_STORE_ORIGIN'), api, issuer: required('AGENT_ISSUER') });
-  const shop = createShop(company, await createSession(identity, company.issuer, required('AGENT_PAIRWISE_SECRET')), { allowCheckout });
-  const agent = shoppingAgent(shop, process.env.AGENT_MODEL || 'anthropic/claude-sonnet-4.5');
-
-  let result = await agent.generate({ prompt });
-  for (let i = 0; i < 3 && shop.scopesToRequest.length; i++) {
-    const transaction = await startSignIn(company, identity, shop.scopesToRequest, { audience: api });
-    shop.authorize(await approve(transaction));
-    result = await agent.generate({
-      messages: [{ role: 'user', content: prompt }, ...result.response.messages,
-        { role: 'user', content: 'I signed in and approved the requested scope. Continue the original task.' }],
-    });
-  }
-  if (shop.scopesToRequest.length) throw Error('The task still needs approval; no further requests were sent.');
-  console.log(result.text);
+  const shop = createShop(company, await createSession(identity, company.issuer, required('AGENT_PAIRWISE_SECRET')), {
+    allowCheckout,
+    onResponse: ({ method, path, status }) => console.log(`${method} ${path}: HTTP ${status}`),
+  });
+  globalThis.AI_SDK_LOG_WARNINGS = false;
+  await runShopping(shop, {
+    prompt,
+    model: gateway(process.env.AGENT_MODEL || defaultModel),
+    approve: async scopes => approve(await startSignIn(company, identity, scopes, { audience: api })),
+  });
+  console.log('Agent: finished');
 }
 
 try {

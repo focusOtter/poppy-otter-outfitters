@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+    <title>Return to your agent | Otter Outfitters</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f3f5ea; color: #153638; font: 1rem/1.5 system-ui, sans-serif; }
+      main { width: min(28rem, calc(100vw - 4rem)); }
+      h1 { font: 2.5rem/1.15 Georgia, serif; margin: .5rem 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <strong>Otter Outfitters</strong>
+      <h1>Returning to your agent…</h1>
+      <p id="status">Keep the shopping agent running on this device.</p>
+      <noscript>Turn on JavaScript and restart approval from your agent.</noscript>
+    </main>
+    <script>
+      const result = new URLSearchParams(location.search);
+      const target = new URL('http://127.0.0.1:4173/oauth/callback');
+      const response = result.has('code') === result.has('error') ? null : result.has('code') ? 'code' : 'error';
+      history.replaceState(null, '', location.pathname);
+      if (response && ['state', 'iss', response].every((key) => result.getAll(key).length === 1 && result.get(key))) {
+        for (const key of ['state', 'iss', response]) target.searchParams.set(key, result.get(key));
+        location.replace(target.href);
+      } else {
+        document.getElementById('status').textContent = 'No valid approval response. Restart approval from your agent.';
+      }
+    </script>
+  </body>
+</html>
