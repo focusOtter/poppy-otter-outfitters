@@ -3,7 +3,7 @@
 import { cardFor } from "@/lib/checkout-options";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth0 } from "@/lib/auth0";
+import { auth0, guestCartsEnabled } from "@/lib/auth0";
 import { ensureGuestToken, getDriver, requireCustomer } from "@/lib/poppy";
 import { cartsApi, type ApiResult } from "@/lib/carts-api";
 import type { ActionResult } from "@/lib/action-result";
@@ -25,6 +25,14 @@ export async function addToCart(_prev: ActionResult, formData: FormData): Promis
   // the cart under its token until the person signs in (proxy.ts then merges it into the account).
   // Agent guests already have a token: the API keys their cart by Poppy Session.
   const driver = await getDriver();
+  if (!guestCartsEnabled) {
+    if (driver.kind === "agent_guest") {
+      return { ok: false, message: "Ask the customer to sign in through their personal agent before starting a cart." };
+    }
+    if (driver.kind === "visitor" || driver.kind === "guest") {
+      return { ok: false, message: "Sign in to start your cart.", signInReturnTo: "/" };
+    }
+  }
   let as: { token: string; caller: "guest" } | undefined;
   if (driver.kind === "visitor" || driver.kind === "guest") {
     try {

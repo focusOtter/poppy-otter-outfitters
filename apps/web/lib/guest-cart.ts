@@ -1,5 +1,5 @@
 import { NextRequest, type NextResponse } from "next/server";
-import { ANONYMOUS_SESSION_COOKIE, auth0 } from "./auth0";
+import { ANONYMOUS_SESSION_COOKIE, auth0, guestCartsEnabled } from "./auth0";
 
 /**
  * Moves a person's guest cart into their account once they sign in. Called from proxy.ts on every request,
@@ -22,6 +22,7 @@ const isAnonymousCookie = (name: string) =>
   name === ANONYMOUS_SESSION_COOKIE || name.startsWith(`${ANONYMOUS_SESSION_COOKIE}__`);
 
 export async function mergeGuestCartOnLogin(req: NextRequest, res: NextResponse): Promise<void> {
+  if (!guestCartsEnabled) return;
   if (!req.cookies.getAll().some((c) => isAnonymousCookie(c.name))) return;
   const path = req.nextUrl.pathname;
   if (path.startsWith("/auth/") || path.startsWith("/.well-known/")) return;

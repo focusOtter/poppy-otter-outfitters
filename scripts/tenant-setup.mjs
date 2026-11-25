@@ -114,6 +114,7 @@ What to set up
                                                               callback, logout and web origin lists (repeatable)
   --local                       env TENANT_LOCAL              also allow ${LOCAL_STORE}; the default when no --store-url is given
   --poppy                       env TENANT_POPPY              set allow_personal_agent_browser_join on the app
+  --skip-anonymous              env TENANT_SKIP_ANONYMOUS     leave anonymous session settings and the guest grant unchanged
   --register-agents             env TENANT_REGISTER_AGENTS    register each --agent with require_proof_of_possession (DPoP),
                                                               allow DPoP on the API, and grant the agent --agent-scopes
   --agent <client metadata url> env POPPY_AGENTS              repeatable; env: comma-separated (default ${DEFAULT_AGENT})
@@ -214,7 +215,9 @@ export function loginUriFor(storeUrls = []) {
   return storeUrls.length ? `${storeUrls[0]}/auth/login` : undefined;
 }
 
-export function planApi(existing, audience, { dpop = false } = {}) {
+export function planApi(existing, audience, { dpop = false, skipAnonymous = false } = {}) {
+  const { anonymous_user, ...signedInPolicy } = SUBJECT_TYPE_AUTHORIZATION;
+  const desiredPolicy = skipAnonymous ? signedInPolicy : { ...signedInPolicy, anonymous_user };
   if (!existing) {
     return {
       action: 'create',
@@ -225,7 +228,7 @@ export function planApi(existing, audience, { dpop = false } = {}) {
         scopes: API_SCOPES,
         allow_offline_access: true,
         skip_consent_for_verifiable_first_party_clients: true,
-        subject_type_authorization: SUBJECT_TYPE_AUTHORIZATION,
+        subject_type_authorization: desiredPolicy,
         ...(dpop ? { proof_of_possession: API_PROOF_OF_POSSESSION } : {}),
       },
     };
@@ -249,10 +252,10 @@ export function planApi(existing, audience, { dpop = false } = {}) {
     fields.push('skip_consent_for_verifiable_first_party_clients');
     body.skip_consent_for_verifiable_first_party_clients = true;
   }
-  const policy = leafDiff(existing.subject_type_authorization ?? {}, SUBJECT_TYPE_AUTHORIZATION);
+  const policy = leafDiff(existing.subject_type_authorization ?? {}, desiredPolicy);
   if (policy.length) {
     fields.push(...policy.map((d) => `subject_type_authorization.${d.field}`));
-    body.subject_type_authorization = deepMerge(existing.subject_type_authorization ?? {}, SUBJECT_TYPE_AUTHORIZATION);
+    body.subject_type_authorization = deepMerge(existing.subject_type_authorization ?? {}, desiredPolicy);
   }
   // Only when it has none: an API that already requires DPoP (or uses another mechanism) is left as it is.
   if (dpop && !existing.proof_of_possession) {
@@ -268,14 +271,14 @@ export const APP_DEFAULTS = {
   grant_types: ['authorization_code', 'refresh_token'],
 };
 
-export function planApp(existing, storeUrls = [], { local = storeUrls.length === 0, removeUrls = [] } = {}) {
+export function planApp(existing, storeUrls = [], { local = storeUrls.length === 0, removeUrls = [], skipAnonymous = false } = {}) {
   const urls = wantedUrls(storeUrls, { local });
   const loginUri = loginUriFor(storeUrls);
   const unwanted = unwantedUrls(removeUrls);
   if (!existing) {
     return {
       action: 'create',
-      fields: ['name', 'app_type', 'token_endpoint_auth_method', 'grant_types', 'callbacks', 'allowed_logout_urls', 'web_origins', ...(loginUri ? ['initiate_login_uri'] : []), 'anonymous_sessions.active'],
+      fields: ['name', 'app_type', 'token_endpoint_auth_method', 'grant_types', 'callbacks', 'allowed_logout_urls', 'web_origins', ...(loginUri ? ['initiate_login_uri'] : []), ...(skipAnonymous ? [] : ['anonymous_sessions.active'])],
       body: {
         name: APP_NAME,
         ...APP_DEFAULTS,
@@ -283,7 +286,7 @@ export function planApp(existing, storeUrls = [], { local = storeUrls.length ===
         allowed_logout_urls: urls.logout,
         web_origins: urls.origins,
         ...(loginUri ? { initiate_login_uri: loginUri } : {}),
-        anonymous_sessions: { active: true },
+        ...(skipAnonymous ? {} : { anonymous_sessions: { active: true } }),
       },
     };
   }
@@ -322,7 +325,7 @@ export function planApp(existing, storeUrls = [], { local = storeUrls.length ===
     fields.push('initiate_login_uri');
     body.initiate_login_uri = '';
   }
-  if (existing.anonymous_sessions?.active !== true) {
+  if (!skipAnonymous && existing.anonymous_sessions?.active !== true) {
     fields.push('anonymous_sessions.active');
     body.anonymous_sessions = { active: true };
   }
@@ -441,6 +444,7 @@ export function resolveConfig(argv, env) {
         agent: { type: 'string', multiple: true },
         'agent-scopes': { type: 'string' },
         poppy: { type: 'boolean' },
+        'skip-anonymous': { type: 'boolean' },
         'register-agents': { type: 'boolean' },
         yes: { type: 'boolean' },
         'write-env': { type: 'boolean' },
@@ -520,6 +524,7 @@ export function resolveConfig(argv, env) {
     agents,
     agentScopes,
     poppy: values.poppy ?? truthy(env.TENANT_POPPY),
+    skipAnonymous: values['skip-anonymous'] ?? truthy(env.TENANT_SKIP_ANONYMOUS),
     registerAgents: values['register-agents'] ?? truthy(env.TENANT_REGISTER_AGENTS),
     yes: values.yes ?? truthy(env.TENANT_YES),
     writeEnv: values['write-env'] ?? truthy(env.TENANT_WRITE_ENV),
@@ -905,7 +910,7 @@ export async function run({ argv, env, root, stdout = process.stdout, stderr = p
   // 1. The API
   await guarded('api', async () => {
     const existing = (await api.all('/resource-servers')).find((r) => r.identifier === cfg.audience);
-    const plan = planApi(existing, cfg.audience, { dpop: cfg.registerAgents });
+    const plan = planApi(existing, cfg.audience, { dpop: cfg.registerAgents, skipAnonymous: cfg.skipAnonymous });
     const sc = plan.scopeChange;
     const details = sc ? [sc.added.length && `add ${sc.added.join(', ')}`, sc.described.length && `describe ${sc.described.join(', ')}`].filter(Boolean).join('; ') : '';
     await planOrApply('api', `${API_NAME} (${cfg.audience})`, plan, {
@@ -935,7 +940,7 @@ export async function run({ argv, env, root, stdout = process.stdout, stderr = p
       if (matches[0]) existing = await api.call('GET', `/clients/${matches[0].client_id}`);
     }
     delete existing?.client_secret;
-    const plan = planApp(existing, cfg.storeUrls, { local: cfg.local, removeUrls: cfg.removeStoreUrls });
+    const plan = planApp(existing, cfg.storeUrls, { local: cfg.local, removeUrls: cfg.removeStoreUrls, skipAnonymous: cfg.skipAnonymous });
     const result = await planOrApply('app', `${APP_NAME}${existing ? ` (${existing.client_id})` : ''}`, plan, {
       details: plan.removed?.length ? `remove ${plan.removed.join(', ')}` : '',
       create: () => api.call('POST', '/clients', plan.body),
@@ -955,6 +960,10 @@ export async function run({ argv, env, root, stdout = process.stdout, stderr = p
   ];
   let storefrontGrants;
   for (const kind of kinds) {
+    if (cfg.skipAnonymous && kind.subjectType === 'anonymous_user') {
+      add({ id: kind.id, status: 'skipped', message: `${kind.label}: skipped by --skip-anonymous` });
+      continue;
+    }
     if (failed('api') || failed('app')) {
       add({ id: kind.id, status: 'skipped', message: `${kind.label}: skipped because the ${failed('api') ? 'API' : 'app'} step failed` });
       continue;

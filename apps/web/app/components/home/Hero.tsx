@@ -1,5 +1,5 @@
 import Image from "next/image";
-export function Hero({ showGuestNote }: { showGuestNote: boolean }) {
+export function Hero({ shoppingNote }: { shoppingNote?: string }) {
   return (
     <section className="hero">
       <div className="hero-copy">
@@ -12,8 +12,8 @@ export function Hero({ showGuestNote }: { showGuestNote: boolean }) {
             Explore the gear
           </a>
         </div>
-        {showGuestNote && (
-          <p className="hero-note">Shop as a guest. Sign in at checkout and your cart comes with you.</p>
+        {shoppingNote && (
+          <p className="hero-note">{shoppingNote}</p>
         )}
       </div>
       <div className="hero-media">

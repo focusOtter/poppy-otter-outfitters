@@ -12,7 +12,7 @@
 - [Cart](/cart), [checkout](/checkout) (pays with a simulated test card) and [orders](/orders)
 
 ## Rules
-- You can browse and fill a cart as a guest.
+- You can browse as a guest. Check the API's agent policy to see whether the customer needs to sign in before starting a cart.
 - Checking out needs the customer to approve you on the store's sign-in page; you then continue in their account.
 - Agents can't change account details such as the name, email or password.
 - The customer can see and disconnect you at /agents.

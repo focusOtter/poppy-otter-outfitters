@@ -1,4 +1,5 @@
 import { cartsApi } from "@/lib/carts-api";
+import { guestCartsEnabled } from "@/lib/auth0";
 import { categoryHref } from "@/lib/format";
 import { getDriver } from "@/lib/poppy";
 import { ApiNotice } from "./components/ApiNotice";
@@ -23,7 +24,9 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <Hero showGuestNote={driver.kind === "visitor" || driver.kind === "guest"} />
+      <Hero shoppingNote={driver.kind === "visitor" || driver.kind === "guest"
+        ? guestCartsEnabled ? "Shop as a guest. Sign in at checkout and your cart comes with you." : "Browse the catalog, then sign in to start your cart."
+        : undefined} />
 
       <section aria-labelledby="catalog-heading" className="catalog">
         <div className="catalog-head">

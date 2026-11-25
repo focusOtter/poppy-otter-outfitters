@@ -1,14 +1,26 @@
 import { cartsApi } from "@/lib/carts-api";
+import { guestCartsEnabled } from "@/lib/auth0";
 import { getDriver } from "@/lib/poppy";
 import { ApiNotice } from "../components/ApiNotice";
 import { CartLines } from "../components/cart/CartLines";
 import { CartSummary } from "../components/cart/CartSummary";
 import { EmptyCart } from "../components/cart/EmptyCart";
 import { toRows } from "../components/cart/rows";
+import { Notice } from "../components/ui/Notice";
 import { PageHeader } from "../components/ui/PageHeader";
 
 export default async function CartPage() {
   const driver = await getDriver();
+  if (!guestCartsEnabled && (driver.kind === "visitor" || driver.kind === "guest" || driver.kind === "agent_guest")) {
+    return (
+      <>
+        <PageHeader title="Your cart" />
+        {driver.kind === "agent_guest"
+          ? <Notice>Ask the customer to sign in through their personal agent before starting a cart.</Notice>
+          : <Notice signInTo="/cart">Sign in to start your cart.</Notice>}
+      </>
+    );
+  }
   // No session yet means nothing was added: the first "Add to cart" starts a guest session.
   if (driver.kind === "visitor") {
     return (

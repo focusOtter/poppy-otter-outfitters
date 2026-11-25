@@ -43,6 +43,7 @@ export interface AppOptions {
   activity?: ActivityLog;
   products?: () => Promise<readonly Product[]>;
   scopedBrowserJoin?: boolean;
+  guestCartsEnabled?: boolean;
   /** Ends an agent Session in the session store, so its next request gets `session_ended`. */
   endSession?: (sessionKey: string) => Promise<void> | void;
   /**
@@ -72,6 +73,7 @@ export function createApp(options: AppOptions) {
   const policy = options.policy ?? loadPolicy();
   const activity = options.activity ?? new ActivityLog();
   const products = options.products ?? (async () => PRODUCTS);
+  const guestCartsEnabled = options.guestCartsEnabled ?? true;
   const limiter = new RateLimiter(policy.requestsPerMinute);
 
   const caller = async (req: Request, res: Response, signInScope: string): Promise<Caller> => {
@@ -142,6 +144,11 @@ export function createApp(options: AppOptions) {
   };
 
   const cartBody = async (cartKey: string) => ({ cartKey, ...priceLines(await carts.get(cartKey), await products()) });
+  const cartCaller = async (req: Request, res: Response) => {
+    const who = await caller(req, res, guestCartsEnabled ? SCOPES.cart : SCOPES.cartWrite);
+    if (!guestCartsEnabled && !who.account) throw new SignInRequiredError({ scope: SCOPES.cartWrite });
+    return who;
+  };
 
   const app = express();
   app.disable('x-powered-by');
@@ -207,11 +214,11 @@ export function createApp(options: AppOptions) {
 
   app.get('/openapi.json', async (_req, res) => {
     const catalog = await products();
-    res.json(openApiDocument(publicUrl, [...new Set(catalog.map((p) => p.category))]));
+    res.json(openApiDocument(publicUrl, [...new Set(catalog.map((p) => p.category))], guestCartsEnabled));
   });
 
   app.get('/agent-policy', (_req, res) => {
-    res.json(describePolicy(policy));
+    res.json(describePolicy(policy, guestCartsEnabled));
   });
 
   // Public: no verification at all, so a bad or missing header costs nothing here.
@@ -238,7 +245,7 @@ export function createApp(options: AppOptions) {
   });
 
   app.get('/cart', async (req, res) => {
-    const who = await caller(req, res, SCOPES.cart);
+    const who = await cartCaller(req, res);
     if (!requireAgentScope(res, who, SCOPES.cartWrite)) {
       return;
     }
@@ -246,7 +253,7 @@ export function createApp(options: AppOptions) {
   });
 
   app.post('/cart/items', async (req, res) => {
-    const who = await caller(req, res, SCOPES.cart);
+    const who = await cartCaller(req, res);
     if (!requireAgentScope(res, who, SCOPES.cartWrite)) {
       return;
     }
@@ -272,7 +279,7 @@ export function createApp(options: AppOptions) {
   });
 
   app.delete('/cart/items/:productId', async (req, res) => {
-    const who = await caller(req, res, SCOPES.cart);
+    const who = await cartCaller(req, res);
     if (!requireAgentScope(res, who, SCOPES.cartWrite)) {
       return;
     }
@@ -287,6 +294,7 @@ export function createApp(options: AppOptions) {
   app.post('/cart/merge', async (req, res) => {
     const who = await caller(req, res, SCOPES.cart);
     personOnly(who, 'POST /cart/merge');
+    if (!guestCartsEnabled) throw new PolicyError(403, 'policy_denied', 'Guest carts are not available.');
     const { account, cartKey } = who;
     // A guest (or no credentials, which `caller` already refused) has no account to merge into.
     if (!account) {

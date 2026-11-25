@@ -63,6 +63,7 @@ export async function setup(
   options: {
     policy?: Partial<AgentPolicy>;
     devTools?: boolean;
+    guestCartsEnabled?: boolean;
     /** `POPPY_AGENTS`: defaults to the test agent. */
     agents?: string[];
     /** `POPPY_AGENT_IDS`. */
@@ -98,6 +99,7 @@ export async function setup(
     activity,
     endSession: (key) => sessionStore.end(key),
     devTools: options.devTools,
+    guestCartsEnabled: options.guestCartsEnabled,
   });
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(0, '127.0.0.1', () => resolve(listening));

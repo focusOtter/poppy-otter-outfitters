@@ -9,14 +9,16 @@ const error = { $ref: '#/components/schemas/Error' };
 const errorResponse = (description: string) => ({ description, content: { 'application/json': { schema: error } } });
 const poppySecurity = [{ poppySession: [] }, { poppySession: [], bearer: [] }];
 
-export function openApiDocument(publicUrl: string, categories = [...CATEGORIES]) {
+export function openApiDocument(publicUrl: string, categories = [...CATEGORIES], guestCartsEnabled = true) {
+  const cartSignIn = 'Ask the customer to sign the agent in and approve cart:write before using the cart.';
+  const cartChallenge = guestCartsEnabled ? {} : { 401: { description: 'Sign-in required; WWW-Authenticate names cart:write.' } };
   return {
     openapi: '3.1.0',
     info: {
       title: 'Otter Outfitters Carts API',
       version: '0.1.0',
       description:
-        'Cart and checkout for Otter Outfitters outdoor gear. Agents call it with a Poppy-Session header. Browse and cart work as a guest; orders need the user to sign the agent in. Read GET /agent-policy for the rules.',
+        `Cart and checkout for Otter Outfitters outdoor gear. Agents call it with a Poppy-Session header. ${guestCartsEnabled ? 'Browse and cart work as a guest; orders need the user to sign the agent in.' : `Browsing works as a guest. ${cartSignIn}`} Read GET /agent-policy for the rules.`,
     },
     servers: [{ url: publicUrl }],
     components: {
@@ -115,13 +117,14 @@ export function openApiDocument(publicUrl: string, categories = [...CATEGORIES])
           operationId: 'getCart',
           summary: 'Read the cart',
           description:
-            'Works as a guest. The cart follows the agent Session into the account when the User signs it in. Signed in, the agent needs cart:write.',
+            guestCartsEnabled ? 'Works as a guest. The cart follows the agent Session into the account when the User signs it in. Signed in, the agent needs cart:write.' : cartSignIn,
           'x-poppy-scope': SCOPES.cartWrite,
           security: poppySecurity,
           responses: {
             200: { description: 'The cart.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Cart' } } } },
             400: errorResponse('invalid_session or session_ended.'),
             403: errorResponse('insufficient_scope: a signed-in agent without cart:write.'),
+            ...cartChallenge,
             429: errorResponse('rate_limited. Wait Retry-After seconds.'),
           },
         },
@@ -130,7 +133,7 @@ export function openApiDocument(publicUrl: string, categories = [...CATEGORIES])
         post: {
           operationId: 'setCartItem',
           summary: 'Set the quantity of a product in the cart',
-          description: 'Sets (not adds) the quantity, so a retried request is safe. Quantity 0 removes the line. Signed in, the agent needs cart:write.',
+          description: `Sets (not adds) the quantity, so a retried request is safe. Quantity 0 removes the line. ${guestCartsEnabled ? 'Signed in, the agent needs cart:write.' : cartSignIn}`,
           'x-poppy-scope': SCOPES.cartWrite,
           security: poppySecurity,
           requestBody: {
@@ -148,6 +151,7 @@ export function openApiDocument(publicUrl: string, categories = [...CATEGORIES])
           responses: {
             200: { description: 'The cart.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Cart' } } } },
             400: errorResponse('Unknown product, bad quantity, or an invalid Session.'),
+            ...cartChallenge,
           },
         },
       },
@@ -155,9 +159,10 @@ export function openApiDocument(publicUrl: string, categories = [...CATEGORIES])
         delete: {
           operationId: 'removeCartItem',
           summary: 'Remove a product from the cart',
+          ...(!guestCartsEnabled ? { description: cartSignIn, 'x-poppy-scope': SCOPES.cartWrite } : {}),
           security: poppySecurity,
           parameters: [{ name: 'productId', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'The cart.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Cart' } } } } },
+          responses: { 200: { description: 'The cart.', content: { 'application/json': { schema: { $ref: '#/components/schemas/Cart' } } } }, ...cartChallenge },
         },
       },
       '/orders': {

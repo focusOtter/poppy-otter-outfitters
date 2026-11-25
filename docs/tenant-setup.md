@@ -138,6 +138,16 @@ To remove an agent, review `auth0 agents unregister <metadata-url> --poppy --dry
 
 ## Updating your configuration
 
+If Auth0 rejects anonymous session settings with HTTP 403, use `--skip-anonymous` for the base provisioner and set `GUEST_CARTS_ENABLED=0` on both deployed apps. Browsing stays public; agents must ask the customer to sign in before opening a cart. Poppy setup is a separate CLI step and may propose the same unavailable API guest policy.
+
+Once Auth0 enables the entitlement, provision the three anonymous settings in one command:
+
+```sh
+AUTH0_CLI=auth0-beta npm run tenant -- --domain "$TENANT" --audience "$API" --store-url "$STORE" --yes
+```
+
+Use the same tenant, API audience, and storefront URL as the signed-in-only setup; preview without `--yes` first. Remove `GUEST_CARTS_ENABLED=0` from both apps and redeploy to restore guest carts.
+
 When your public hosts change, repeat step 4, update the application's URL lists, and rerun the doctor. Keep passing the explicit `--api-url` mapping: the sample's API identifier and public OpenAPI host differ.
 
 `auth0 poppy config` rebuilds the discovery configuration without changing the tenant. Supply the same `--company-domain`, `--app`, `--api`, `--api-url`, `--web-unscoped=false` and `--out` values used for setup.
@@ -153,6 +163,7 @@ When your public hosts change, repeat step 4, update the application's URL lists
 | `--remove-store-url https://old.example` | Remove this store's URLs (a stopped tunnel), and its Initiate Login URI; repeatable |
 | `--local` | Also allow `http://localhost:3000`; the default when no `--store-url` is given |
 | `--poppy` | Set `allow_personal_agent_browser_join` on the application (not the rest of `auth0 poppy setup`) |
+| `--skip-anonymous` | Omit the API anonymous-user policy, storefront anonymous sessions, and anonymous grant |
 | `--register-agents` | Register each `--agent` with DPoP required, and grant it `--agent-scopes` |
 | `--json` | Machine-readable output |
 

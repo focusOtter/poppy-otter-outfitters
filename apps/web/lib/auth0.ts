@@ -24,6 +24,7 @@ const poppyConfig = { ...poppyFile, organization: { ...poppyFile.organization, d
 
 /** The anonymous session cookie (the SDK's default name, set explicitly so proxy.ts can test for it cheaply). */
 export const ANONYMOUS_SESSION_COOKIE = "auth0_anon";
+export const guestCartsEnabled = process.env.GUEST_CARTS_ENABLED !== "0";
 
 export const auth0 = new Auth0Client({
   authorizationParameters: {
@@ -41,7 +42,7 @@ export const auth0 = new Auth0Client({
   // accepts for the cart (not for orders). Needs a client grant from this app to the Carts API audience with
   // subject_type "anonymous_user" and scope cart:write. An agent guest (Poppy) uses the same cookie.
   anonymousSession: {
-    enabled: true,
+    enabled: guestCartsEnabled,
     audience: process.env.AUTH0_AUDIENCE,
     scope: "cart:write",
     cookie: { name: ANONYMOUS_SESSION_COOKIE },
@@ -79,7 +80,9 @@ export const auth0 = new Auth0Client({
 function poppyRefusal(code: string): string {
   switch (code) {
     case PoppyErrorCode.GUEST_NOT_SUPPORTED:
-      return "Agents sign in through the full login page.";
+      return guestCartsEnabled
+        ? "Agents sign in through the full login page."
+        : "Guest carts are unavailable. Ask the customer to sign in through their personal agent before starting a cart.";
     case PoppyErrorCode.SIGN_IN_REQUIRED:
       return "An agent is browsing this store as a guest in this browser. Log out to end its visit, then sign in.";
     case PoppyErrorCode.INVALID_GUEST:

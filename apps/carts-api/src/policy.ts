@@ -30,11 +30,12 @@ export function loadPolicy(env: NodeJS.ProcessEnv = process.env): AgentPolicy {
   };
 }
 
-export function describePolicy(policy: AgentPolicy) {
+export function describePolicy(policy: AgentPolicy, guestCartsEnabled = true) {
+  const browse = ['GET /products', 'GET /products/{id}'];
   return {
     summary:
-      'Agents can browse and fill a cart as a guest. Placing an order needs the customer to sign the agent in on Universal Login and approve orders:write. Agents never change account settings, see other agents, or read the activity log.',
-    guest: { allowed: ['GET /products', 'GET /products/{id}', 'GET /cart', 'POST /cart/items', 'DELETE /cart/items/{productId}'] },
+      `${guestCartsEnabled ? 'Agents can browse and fill a cart as a guest.' : 'Agents can browse as a guest. Ask the customer to sign in and approve cart:write before starting a cart.'} Placing an order needs the customer to sign the agent in on Universal Login and approve orders:write. Agents never change account settings, see other agents, or read the activity log.`,
+    guest: { allowed: guestCartsEnabled ? [...browse, 'GET /cart', 'POST /cart/items', 'DELETE /cart/items/{productId}'] : browse },
     signedIn: {
       allowed: ['GET /cart, POST /cart/items, DELETE /cart/items/{productId} (cart:write)', 'GET /orders (orders:read)', 'POST /orders (orders:write)'],
       approval:

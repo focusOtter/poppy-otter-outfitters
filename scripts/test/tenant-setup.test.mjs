@@ -64,6 +64,12 @@ describe('planApi', () => {
     assert.equal(plan.body.skip_consent_for_verifiable_first_party_clients, true);
   });
   test('is ok when everything matches', () => assert.equal(planApi(right, AUD).action, 'ok'));
+  test('keeps an existing anonymous policy intact when updating signed-in policies with --skip-anonymous', () => {
+    const existing = { ...right, subject_type_authorization: { ...right.subject_type_authorization, user: { policy: 'require_client_grant' } } };
+    const plan = planApi(existing, AUD, { skipAnonymous: true });
+    assert.deepEqual(plan.fields, ['subject_type_authorization.user.policy']);
+    assert.deepEqual(plan.body.subject_type_authorization, right.subject_type_authorization);
+  });
   test('names each field that differs', () => {
     const plan = planApi({ ...right, allow_offline_access: false, subject_type_authorization: { ...right.subject_type_authorization, anonymous_user: { policy: 'deny_all' } } }, AUD);
     assert.equal(plan.action, 'update');
@@ -391,6 +397,19 @@ describe('tenant-setup against a fake tenant', () => {
     assert.equal(second.code, 0);
     assert.deepEqual(fake.state.mutations, [], 'the second run must not write');
     assert.doesNotMatch(second.out, /^[+~] /m);
+  });
+
+  test('--skip-anonymous provisions sign-in and omitting it later enables guest carts', async () => {
+    const signedIn = await exec('--yes', '--skip-anonymous');
+    assert.equal(signedIn.code, 0, signedIn.out);
+    assert.equal(fake.state.apis[0].subject_type_authorization.anonymous_user, undefined);
+    assert.equal(fake.state.clients[0].anonymous_sessions, undefined);
+    assert.deepEqual(fake.state.grants.map((grant) => grant.subject_type), ['user']);
+    const enabled = await exec('--yes');
+    assert.equal(enabled.code, 0, enabled.out);
+    assert.deepEqual(fake.state.apis[0].subject_type_authorization.anonymous_user, { policy: 'require_client_grant' });
+    assert.deepEqual(fake.state.clients[0].anonymous_sessions, { active: true });
+    assert.deepEqual(fake.state.grants.map((grant) => grant.subject_type), ['user', 'anonymous_user']);
   });
 
   test('existing URLs, extra scopes and extra grant scopes survive; the guest grant is trimmed', async () => {

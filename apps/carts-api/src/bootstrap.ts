@@ -59,6 +59,7 @@ export async function buildApp() {
     activity: new ActivityLog(stores.connections, database?.activity),
     products: config.useTestAgent ? undefined : (database?.products ?? (async () => OUTFITTERS)),
     scopedBrowserJoin: process.env.NODE_ENV === 'production',
+    guestCartsEnabled: process.env.GUEST_CARTS_ENABLED !== '0',
     endSession: stores.endSession,
     devTools: config.devTools,
     extraRoutes,

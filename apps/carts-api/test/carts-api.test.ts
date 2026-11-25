@@ -40,6 +40,32 @@ describe('public routes', () => {
 });
 
 describe('signed-out agent (Poppy-Session header only)', () => {
+  test('signed-in-only mode lets agents browse but asks for cart:write before using a cart', async () => {
+    await start({ guestCartsEnabled: false });
+    expect((await ctx.request('/products')).status).toBe(200);
+    const policy = await (await ctx.request('/agent-policy')).json() as { guest: { allowed: string[] } };
+    expect(policy.guest.allowed).toEqual(['GET /products', 'GET /products/{id}']);
+    for (const [method, path] of [['GET', '/cart'], ['POST', '/cart/items'], ['DELETE', '/cart/items/beans-konga']] as const) {
+      const response = await ctx.request(path, {
+        method,
+        headers: { 'poppy-session': await ctx.sessionJwt({ htm: method, path }) },
+      });
+      expect(response.status).toBe(401);
+      expect(wwwAuthenticate(response)).toContain('scope="cart:write"');
+    }
+    const token = await ctx.issueToken({ sub: 'auth0|shopper', azp: ctx.agent.cimdUrl, scope: 'openid cart:write' });
+    const cart = await ctx.request('/cart/items', {
+      ...json({ productId: 'beans-konga', quantity: 1 }),
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+        'poppy-session': await ctx.sessionJwt({ htm: 'POST', path: '/cart/items', accessToken: token }),
+      },
+    });
+    expect(cart.status).toBe(200);
+    expect(await cart.json()).toMatchObject({ items: [{ productId: 'beans-konga', quantity: 1 }] });
+  });
+
   test('GET /cart works and is keyed by poppy.key', async () => {
     await start();
     const session = await ctx.sessionJwt({ htm: 'GET', path: '/cart', sid: 'sid-cart' });
