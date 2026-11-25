@@ -300,6 +300,27 @@ describe('access tokens', () => {
     });
   });
 
+  test.each([null, { card: 4242 }])('malformed payment %j gives 402 and preserves the customer cart', async (payment) => {
+    await start();
+    const token = await ctx.issueToken({ sub: 'auth0|malformed-payment', azp: WEB_CLIENT_ID });
+    const person = { authorization: `Bearer ${token}` };
+    expect((await ctx.request('/cart/items', {
+      ...json({ productId: 'kettle-vessel', quantity: 1 }),
+      headers: { ...person, 'content-type': 'application/json' },
+    })).status).toBe(200);
+
+    const order = await ctx.request('/orders', {
+      ...json({ payment }),
+      headers: { ...person, 'content-type': 'application/json' },
+    });
+    expect(order.status).toBe(402);
+    expect(await order.json()).toMatchObject({ error: 'invalid_card' });
+    expect(await (await ctx.request('/cart', { headers: person })).json()).toMatchObject({
+      items: [{ productId: 'kettle-vessel', quantity: 1 }],
+    });
+    expect(await (await ctx.request('/orders', { headers: person })).json()).toEqual({ orders: [] });
+  });
+
   test('a declined test card gives 402, keeps the cart and places no order', async () => {
     await start();
     const sid = 'sid-declined';

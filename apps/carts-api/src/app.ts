@@ -1,5 +1,5 @@
 import { SAMPLE_ADDRESS } from './shipping.js';
-import { simulatePayment, type PaymentInput } from './payments.js';
+import { simulatePayment } from './payments.js';
 import { createHash, randomUUID } from 'node:crypto';
 import express, { type ErrorRequestHandler, type Request, type Response, type Router } from 'express';
 import { SignInRequiredError, toHttpErrorResponse, type ApiClient } from '@auth0/auth0-api-js';
@@ -408,7 +408,7 @@ export function createApp(options: AppOptions) {
       };
     }
     // A declined card puts the cart back as it was, so the customer or agent can try again.
-    const paid = simulatePayment(totalCents, (req.body as { payment?: PaymentInput } | undefined)?.payment);
+    const paid = simulatePayment(totalCents, (req.body as { payment?: unknown } | undefined)?.payment);
     if (!paid.ok) {
       await carts.restore(cartKey, lines);
       return { status: 402, body: { error: paid.code, error_description: paid.message }, keep: true };

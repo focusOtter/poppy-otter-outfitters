@@ -1,11 +1,6 @@
 // A simulated payment. No card is charged and no money moves: it decides "paid" or "declined" from a test card number,
 // the way a payment provider's test mode does, so checkout has a real step to succeed or fail at.
 
-export interface PaymentInput {
-  /** A test card number. Spaces are ignored. Defaults to the approved Visa test card. */
-  card?: string;
-}
-
 export interface PaymentRecord {
   status: 'paid';
   /** Always `test_card`: nothing here is a real payment method. */
@@ -26,8 +21,11 @@ export const APPROVED_TEST_CARD = '4242424242424242';
 export const DECLINED_TEST_CARD = '4000000000000002';
 
 /** Approves the Visa test card, declines 4000 0000 0000 0002, and refuses anything else. */
-export function simulatePayment(totalCents: number, input: PaymentInput = {}, newReference = randomReference): PaymentResult {
-  const card = (input.card ?? APPROVED_TEST_CARD).replace(/\s+/g, '');
+export function simulatePayment(totalCents: number, input: unknown = {}, newReference = randomReference): PaymentResult {
+  const number = input && typeof input === 'object' && !Array.isArray(input)
+    ? ('card' in input ? input.card : APPROVED_TEST_CARD)
+    : undefined;
+  const card = typeof number === 'string' ? number.replace(/\s+/g, '') : undefined;
   if (card === DECLINED_TEST_CARD) {
     return { ok: false, code: 'card_declined', message: 'The test card was declined. Try 4242 4242 4242 4242.' };
   }
