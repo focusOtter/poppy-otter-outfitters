@@ -160,7 +160,7 @@ export function createApp(options: AppOptions) {
     });
     next();
   });
-  // Records every request that carried a Poppy-Session header or a token, with the outcome. Identifiers only.
+  // Only attribute verified callers; dev tools also record attempts made with unverified credentials.
   app.use((req, res, next) => {
     const started = Date.now();
     const json = res.json.bind(res);
@@ -177,6 +177,7 @@ export function createApp(options: AppOptions) {
       const hasToken = req.headers.authorization !== undefined;
       if (!hasHeader && !hasToken) return end(...args);
       const who = res.locals.who as Caller | undefined;
+      if (!who && !options.devTools) return end(...args);
       const challenge = res.getHeader('www-authenticate');
       const outcome =
         res.statusCode < 400

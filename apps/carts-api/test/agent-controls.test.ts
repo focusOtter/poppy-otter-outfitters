@@ -186,6 +186,15 @@ describe('activity and agent orders', () => {
     expect(mine.entries.length).toBeGreaterThan(0);
   });
 
+  test('public product reads do not write activity for attached credentials', async () => {
+    const ctx = await start();
+    const person = { authorization: `Bearer ${await ctx.issueToken({ sub: 'auth0|shopper', azp: WEB_CLIENT_ID })}` };
+    expect((await ctx.request('/products', { headers: person })).status).toBe(200);
+    expect(await ctx.activity.list()).toEqual([]);
+    expect((await ctx.request('/cart', { headers: person })).status).toBe(200);
+    expect(await ctx.activity.list()).toEqual([expect.objectContaining({ caller: 'person', path: '/cart' })]);
+  });
+
   test('a failed verification is logged as unverified, and no credential is stored', async () => {
     const ctx = await start({ devTools: true });
     const header = await ctx.sessionJwt({ htm: 'GET', path: '/cart', defect: 'session_bad_signature' });
