@@ -1,0 +1,30 @@
+{
+  "name": "@driftbean/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/ensure-poppy-config.mjs && next dev -p 3000",
+    "build": "node scripts/ensure-poppy-config.mjs --build && next build",
+    "start": "next start",
+    "typecheck": "node scripts/ensure-poppy-config.mjs --typecheck && next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@auth0/nextjs-auth0": "4.34.0-beta.0",
+    "@next/env": "~16.4.6",
+    "next": "~16.4.6",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "~5.8.3"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.23"
+    }
+  }
+}

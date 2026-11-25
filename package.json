@@ -1,0 +1,25 @@
+{
+  "name": "driftbean-poppy-store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "tenant": "node scripts/tenant-setup.mjs",
+    "install:all": "npm --prefix apps/carts-api install && npm --prefix apps/web install && npm --prefix apps/web-express install",
+    "dev": "node scripts/dev.mjs",
+    "dev:express": "node scripts/dev.mjs --express",
+    "dev:agent": "node scripts/dev.mjs --agent",
+    "agent": "npm --prefix apps/carts-api run agent --silent --",
+    "demo": "npm --prefix apps/carts-api run demo",
+    "smoke": "npm --prefix apps/carts-api run smoke",
+    "test": "npm --prefix apps/carts-api test",
+    "typecheck": "npm --prefix apps/carts-api run typecheck && npm --prefix apps/web run typecheck",
+    "check": "npm run typecheck && npm test && npm --prefix apps/web-express test",
+    "doctor": "node scripts/doctor.mjs",
+    "tunnel": "node scripts/tunnel.mjs"
+  }
+}
