@@ -12,6 +12,8 @@ Otter Outfitters is a demo river and camp gear shop for [Poppy, the Personal Age
 
 ## Architecture
 
+![Live architecture: the storefront and local agent call the Carts API backed by Neon. Auth0 consent returns through a public HTTPS callback to the local runner, which uses Vercel AI Gateway for its model.](docs/assets/otter-architecture.svg)
+
 | Component | Role in the live demo |
 |---|---|
 | [Storefront](apps/web) | Next.js on Vercel. Publishes Poppy discovery, uses Auth0 for customer sign-in, and reads the Carts API for cart, receipt, and activity views. |
