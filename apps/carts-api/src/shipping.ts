@@ -12,8 +12,8 @@ export interface ShippingAddress {
 }
 
 export const SAMPLE_ADDRESS: ShippingAddress = {
-  name: 'Drift Bean sample customer',
-  line1: '12 Drift Bean Lane',
+  name: 'Otter Outfitters sample customer',
+  line1: '12 Otter Demo Lane',
   city: 'Portland',
   region: 'OR',
   postalCode: '97201',

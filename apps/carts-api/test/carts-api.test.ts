@@ -193,6 +193,7 @@ describe('access tokens', () => {
       placedVia: null,
       poppySessionKey: null,
       totalCents: 14900,
+      shipping: { name: 'Otter Outfitters sample customer', line1: '12 Otter Demo Lane', simulated: true },
     });
 
     const list = (await (await ctx.request('/orders', { headers: auth })).json()) as { orders: unknown[] };

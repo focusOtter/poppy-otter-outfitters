@@ -2,7 +2,7 @@
 // and a payment method is a test card the Carts API recognises, so no money moves.
 
 export const CHECKOUT_ADDRESSES = [
-  { id: "addr_home", name: "Drift Bean sample customer", oneLine: "12 Drift Bean Lane, Portland, OR 97201, US" }
+  { id: "addr_home", name: "Otter Outfitters sample customer", oneLine: "12 Otter Demo Lane, Portland, OR 97201, US" }
 ] as const;
 
 export const CHECKOUT_PAYMENT_METHODS = [

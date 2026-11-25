@@ -2,7 +2,7 @@
 // apps/web/lib/checkout-options.ts. They are samples: nothing ships, and a payment method is a test card the Carts API
 // recognises, so no money moves.
 
-export const CHECKOUT_ADDRESSES = [{ id: 'addr_home', name: 'Drift Bean sample customer', oneLine: '12 Drift Bean Lane, Portland, OR 97201, US' }];
+export const CHECKOUT_ADDRESSES = [{ id: 'addr_home', name: 'Otter Outfitters sample customer', oneLine: '12 Otter Demo Lane, Portland, OR 97201, US' }];
 
 export const CHECKOUT_PAYMENT_METHODS = [
   { id: 'pm_visa_4242', brand: 'Visa', last4: '4242', card: '4242424242424242', approves: true },
