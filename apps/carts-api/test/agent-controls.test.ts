@@ -71,15 +71,23 @@ describe('policy', () => {
     expect(await third.json()).toMatchObject({ error: 'rate_limited' });
   });
 
-  test('an agent order over maxOrderCents is refused and the cart is kept for the customer', async () => {
+  test('an agent order over maxOrderCents is refused and the items stay in the separate agent cart', async () => {
     const ctx = await start({ policy: { maxOrderCents: 2_000 } });
-    const headers = await signedInAgent(ctx, 'sid-big', 'auth0|big');
+    const account = 'auth0|big';
+    const headers = await signedInAgent(ctx, 'sid-big', account);
     await ctx.request('/cart/items', post({ productId: 'beans-konga', quantity: 1 }, await headers('POST', '/cart/items')));
     const order = await ctx.request('/orders', { method: 'POST', headers: await headers('POST', '/orders') });
     expect(order.status).toBe(403);
-    expect(await order.json()).toMatchObject({ error: 'policy_denied' });
+    expect(await order.json()).toMatchObject({
+      error: 'policy_denied',
+      error_description: expect.stringContaining('the customer must add them to their own cart'),
+    });
     const cart = (await (await ctx.request('/cart', { headers: await headers('GET', '/cart') })).json()) as { items: unknown[] };
     expect(cart.items).toHaveLength(1);
+    const person = { authorization: `Bearer ${await ctx.issueToken({ sub: account, azp: WEB_CLIENT_ID })}` };
+    const storefront = await ctx.request('/cart', { headers: person });
+    expect(storefront.status).toBe(200);
+    expect(await storefront.json()).toMatchObject({ items: [] });
   });
 
   test('agents cannot list or disconnect agents, or read the activity log', async () => {

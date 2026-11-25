@@ -395,14 +395,13 @@ export function createApp(options: AppOptions) {
       await carts.restore(cartKey, lines);
       return { status: 409, body: { error: 'empty_cart', error_description: 'The cart is empty.' }, keep: false };
     }
-    // The cart is put back, so the customer can finish this order themselves in the storefront.
     if (poppy && totalCents > policy.maxOrderCents) {
       await carts.restore(cartKey, lines);
       return {
         status: 403,
         body: {
           error: 'policy_denied',
-          error_description: `Agents can place orders up to ${policy.maxOrderCents / 100} USD. Ask the customer to check out this cart in the store.`,
+          error_description: `Agents can place orders up to ${policy.maxOrderCents / 100} USD. The items remain in the agent's cart. To buy them directly, the customer must add them to their own cart in the store.`,
         },
         keep: false,
       };
