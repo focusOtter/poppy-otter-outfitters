@@ -138,7 +138,7 @@ To remove an agent, review `auth0 agents unregister <metadata-url> --poppy --dry
 
 ## Updating your configuration
 
-If Auth0 rejects anonymous session settings with HTTP 403, use `--skip-anonymous` for the base provisioner and set `GUEST_CARTS_ENABLED=0` on both deployed apps. Browsing stays public; agents must ask the customer to sign in before opening a cart. Poppy setup is a separate CLI step and may propose the same unavailable API guest policy.
+If Auth0 rejects anonymous session settings with HTTP 403, use `--skip-anonymous` for the base provisioner and set `GUEST_CARTS_ENABLED=0` on both deployed apps. The storefront catalog, search, and product pages stay public, as do `GET /products` and `GET /products/{id}`; none requires an anonymous session or an API access token. A guest agent can browse with only OIDC tokens, but must ask the customer to sign in and approve `cart:write` before opening a cart. Poppy setup is a separate CLI step and may propose the same unavailable API guest policy.
 
 Once Auth0 enables the entitlement, provision the three anonymous settings in one command:
 

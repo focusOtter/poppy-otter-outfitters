@@ -1,6 +1,6 @@
 import "server-only";
 import type { SessionData } from "@auth0/nextjs-auth0/types";
-import { auth0 } from "./auth0";
+import { auth0, guestCartsEnabled } from "./auth0";
 import { nameFor } from "./display-name";
 
 /**
@@ -34,6 +34,11 @@ export function displayName(session: SessionData): string {
   return nameFor(session.user);
 }
 
+export function canReadCart(driver: Driver): boolean {
+  return driver.kind === "person" || driver.kind === "agent_signed_in" ||
+    (guestCartsEnabled && driver.kind !== "visitor");
+}
+
 /**
  * POPPY 6/6 · Who is driving? Combines auth0.poppy.getContext() and getSession() into one answer for the UI.
  */
@@ -43,6 +48,7 @@ export async function getDriver(): Promise<Driver> {
   // A person's own login always reports { kind: "human" }, even with a stale guest cookie.
   if (poppy.kind === "human") {
     if (session) return { kind: "person", name: displayName(session), session };
+    if (!guestCartsEnabled) return { kind: "visitor" };
     // Not logged in. With Poppy reporting a human, an anonymous session is the person's own guest session, never an
     // agent's: auth0.poppy.getContext() reports an agent guest's cookie as { kind: "agent" }.
     const anon = await auth0.getAnonymousSession();

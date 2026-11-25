@@ -43,6 +43,12 @@ describe('signed-out agent (Poppy-Session header only)', () => {
   test('signed-in-only mode lets agents browse but asks for cart:write before using a cart', async () => {
     await start({ guestCartsEnabled: false });
     expect((await ctx.request('/products')).status).toBe(200);
+    expect((await ctx.request('/products/beans-konga')).status).toBe(200);
+    for (const path of ['/products', '/products/beans-konga']) {
+      expect((await ctx.request(path, {
+        headers: { 'poppy-session': await ctx.sessionJwt({ htm: 'GET', path }) },
+      })).status).toBe(200);
+    }
     const policy = await (await ctx.request('/agent-policy')).json() as { guest: { allowed: string[] } };
     expect(policy.guest.allowed).toEqual(['GET /products', 'GET /products/{id}']);
     for (const [method, path] of [['GET', '/cart'], ['POST', '/cart/items'], ['DELETE', '/cart/items/beans-konga']] as const) {
