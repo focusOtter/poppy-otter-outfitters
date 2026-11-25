@@ -13,7 +13,12 @@ const mono = Roboto_Mono({ subsets: ["latin"], variable: "--font-mono" });
 const title = "Otter Outfitters | River and camp gear";
 const description = "A demo outdoor shop where your personal agent can fill a cart and check out with your approval, powered by Auth0 Personal Agents.";
 // Link previews (Slack, X, LinkedIn, iMessage) need absolute image URLs, so resolve them against the public URL.
-const ogImage = { url: "/outfitters-og.png", width: 1200, height: 630, alt: "Otter Outfitters: take the river route" };
+const ogImage = {
+  url: "/outfitters-og.png",
+  width: 1200,
+  height: 630,
+  alt: "Otter Outfitters — Your agent shops. You approve. An otter floats down a mountain river."
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_BASE_URL || "http://localhost:3000"),
