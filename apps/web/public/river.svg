@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-label="An otter on a winding river in the mountains">
+  <defs>
+    <pattern id="grain" width="7" height="7" patternUnits="userSpaceOnUse">
+      <path d="M1 1h1m3 3h1M1 6h1" stroke="#132f31" stroke-opacity=".14"/>
+    </pattern>
+    <g id="fir"><path d="M0-86-21-45h10l-20 28h14L-36 9h72L17-17h14L11-45h10z"/><path d="M-3 4v18h6V4z"/></g>
+  </defs>
+  <path fill="#e9ddac" d="M0 0h900v620H0z"/>
+  <circle cx="696" cy="134" r="89" fill="#f6bc67"/>
+  <path fill="#96aa8c" d="M0 258 86 181l46 31L282 87l84 76 67-50 173 117 155-59 139 71v198H0z"/>
+  <path fill="#cad0a3" d="m208 149 74-62 84 76-43-25-14 17-27-26-19 22-14-12zm225-36 96 65-59-20-18 2-22-14-19 8-12-11z"/>
+  <path fill="#668d76" d="M0 295c110-99 175-89 280-78 137 14 177 52 276 18 114-39 224-50 344 38v347H0z"/>
+  <path fill="#3d746d" d="M0 349c250-133 313 32 504-40 152-57 250-54 396 2v309H0z"/>
+  <path fill="#8db9a9" d="M620 250c-36 51-188 69-163 108 19 28 94 42 80 62-20 28-149 10-248 47C187 506 137 563 95 620h805V464c-41-24-85-39-139-45-133-15-144-30-188-53-38-21-22-33 23-56 35-17 61-36 46-60z"/>
+  <g fill="#215054">
+    <use href="#fir" transform="translate(24 353) scale(1.28)"/><use href="#fir" transform="translate(84 335) scale(.91)"/>
+    <use href="#fir" transform="translate(147 306) scale(.74)"/><use href="#fir" transform="translate(180 298) scale(.54)"/>
+    <use href="#fir" transform="translate(846 353) scale(1.3)"/><use href="#fir" transform="translate(891 375) scale(1.8)"/>
+    <use href="#fir" transform="translate(803 334) scale(.65)"/><use href="#fir" transform="translate(758 326) scale(.58)"/>
+    <use href="#fir" transform="translate(47 625) scale(1.4)"/><use href="#fir" transform="translate(117 589) scale(.83)"/>
+  </g>
+  <g fill="none" stroke="#dbede1" stroke-linecap="round" stroke-width="4" opacity=".75">
+    <path d="M406 507c35-10 68-13 94-12m127 17c37 9 66 9 85 6m-365 41c33-11 49-15 82-16m296 19c20-2 44-1 61 4m-198-187 33 12m-110-68 31-11m-49 274h55"/>
+    <ellipse cx="557" cy="507" rx="95" ry="25" opacity=".45"/>
+  </g>
+  <g transform="translate(558 487) rotate(-20)">
+    <path d="M29 15c36 0 54 19 71 32 19 14 35 16 52 11-18 21-54 8-77-6C55 39 40 40 17 42z" fill="#4a4640"/>
+    <ellipse rx="68" ry="42" fill="#655a49"/>
+    <ellipse cx="-8" cy="1" rx="38" ry="27" fill="#b19671"/>
+    <circle cx="-55" cy="-28" r="16" fill="#55493d"/>
+    <circle cx="-92" cy="-12" r="13" fill="#55493d"/>
+    <ellipse cx="-65" cy="-6" rx="38" ry="30" fill="#78654c"/>
+    <ellipse cx="-85" cy="4" rx="19" ry="13" fill="#cbb08a"/>
+    <circle cx="-76" cy="-14" r="4" fill="#253335"/>
+    <ellipse cx="-102" cy="1" rx="6" ry="4" fill="#253335"/>
+    <path d="M-14-11Q-40-26-43-10q-2 13 29 19M7 15Q-13 26-28 18" fill="none" stroke="#55493d" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <path d="M0 0h900v620H0z" fill="url(#grain)" opacity=".46"/>
+</svg>

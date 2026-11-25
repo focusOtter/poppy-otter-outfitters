@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1264" height="420" viewBox="0 0 1264 420" role="img" aria-labelledby="t d">
+  <title id="t">How an agent shops a Poppy store</title>
+  <desc id="d">A track shows who is driving at each step. Anyone can discover the store. The agent shops as a guest. The API asks for orders:write and you approve the agent. The agent checks out in your account. You disconnect it and its session ends.</desc>
+  <style>
+    .bg{fill:#f7f6f4}
+    .who{font:500 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+    .h{fill:#1c1c1c;font:650 24px -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;letter-spacing:-.4px}
+    .p{fill:#57534e;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+    .code{fill:#ecebe7}
+    .c{fill:#1c1c1c;font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .ok{fill:#2f6b46;font:600 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .ask{fill:#c2501a;font:600 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .end{fill:#8a857e;font:600 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .grey{fill:#cfcbc4}.poppy{fill:#e8692b}.ink{fill:#1c1c1c}
+  </style>
+
+  <rect class="bg" width="1264" height="420" rx="18"/>
+
+  <!-- Who's driving: one track, coloured by who is in control -->
+  <text class="who" x="40" y="62" fill="#8a857e">Anyone</text>
+  <text class="who" x="280" y="62" fill="#c2501a">The agent, as a guest</text>
+  <text class="who" x="520" y="62" fill="#1c1c1c">You</text>
+  <text class="who" x="760" y="62" fill="#c2501a">The agent, for you</text>
+  <text class="who" x="1000" y="62" fill="#8a857e">Nobody</text>
+
+  <rect class="grey"  x="40"   y="84" width="240" height="8" rx="4"/>
+  <rect class="poppy" x="280"  y="84" width="240" height="8"/>
+  <rect class="ink"   x="520"  y="84" width="240" height="8"/>
+  <rect class="poppy" x="760"  y="84" width="240" height="8"/>
+  <rect class="grey"  x="1000" y="84" width="40"  height="8" rx="4"/>
+
+  <circle cx="44"   cy="88" r="10" fill="#f7f6f4" stroke="#cfcbc4" stroke-width="5"/>
+  <circle cx="284"  cy="88" r="10" fill="#f7f6f4" stroke="#e8692b" stroke-width="5"/>
+  <circle cx="524"  cy="88" r="10" fill="#f7f6f4" stroke="#1c1c1c" stroke-width="5"/>
+  <circle cx="764"  cy="88" r="10" fill="#f7f6f4" stroke="#e8692b" stroke-width="5"/>
+  <circle cx="1004" cy="88" r="10" fill="#1c1c1c"/>
+
+  <!-- Discover -->
+  <g transform="translate(40 0)">
+    <text class="h" y="156">Discover</text>
+    <text class="p" y="188">The agent reads the store’s</text>
+    <text class="p" y="210">public discovery file.</text>
+    <rect class="code" y="250" width="224" height="72" rx="10"/>
+    <text class="c" x="14" y="278">GET /.well-known/poppy.json</text>
+    <text class="ok" x="14" y="302">200 issuer, scopes</text>
+  </g>
+
+  <!-- Shop as a guest -->
+  <g transform="translate(280 0)">
+    <text class="h" y="156">Shop as a guest</text>
+    <text class="p" y="188">It fills a cart with no account.</text>
+    <text class="p" y="210">The cart follows its session.</text>
+    <rect class="code" y="250" width="224" height="72" rx="10"/>
+    <text class="c" x="14" y="278">POST /cart/items</text>
+    <text class="ok" x="14" y="302">200 cart by Poppy-Session</text>
+  </g>
+
+  <!-- You approve -->
+  <g transform="translate(520 0)">
+    <text class="h" y="156">You approve</text>
+    <text class="p" y="188">Checkout needs you. You sign</text>
+    <text class="p" y="210">in and approve the agent.</text>
+    <rect class="code" y="250" width="224" height="72" rx="10"/>
+    <text class="c" x="14" y="278">POST /orders</text>
+    <text class="ask" x="14" y="302">401 scope="orders:write"</text>
+  </g>
+
+  <!-- Check out -->
+  <g transform="translate(760 0)">
+    <text class="h" y="156">Check out</text>
+    <text class="p" y="188">The same cart becomes your</text>
+    <text class="p" y="210">order, placed via the agent.</text>
+    <rect class="code" y="250" width="224" height="72" rx="10"/>
+    <text class="c" x="14" y="278">POST /orders + your token</text>
+    <text class="ok" x="14" y="302">201 placedVia: the agent</text>
+  </g>
+
+  <!-- Disconnect -->
+  <g transform="translate(1000 0)">
+    <text class="h" y="156">Disconnect</text>
+    <text class="p" y="188">You end it at /agents. Its</text>
+    <text class="p" y="210">next request is refused.</text>
+    <rect class="code" y="250" width="224" height="72" rx="10"/>
+    <text class="c" x="14" y="278">GET /cart</text>
+    <text class="end" x="14" y="302">400 session_ended</text>
+  </g>
+
+  <text class="p" x="40" y="380" fill="#8a857e">Auth0 runs sign-in, approval and tokens. The storefront and the Carts API check the agent’s signed session on every request.</text>
+</svg>

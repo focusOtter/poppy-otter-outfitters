@@ -1,0 +1,33 @@
+{
+  "name": "@driftbean/carts-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "dev:test-agent": "POPPY_TEST_AGENT=1 CARTS_API_DEV_TOOLS=1 tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "test": "vitest run",
+    "smoke": "tsx scripts/smoke.ts",
+    "demo": "tsx scripts/demo.ts",
+    "typecheck": "tsc --noEmit",
+    "agent": "tsx scripts/agent.ts"
+  },
+  "dependencies": {
+    "@auth0/auth0-api-js": "1.8.0-beta.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "@upstash/redis": "^1.41.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.0",
+    "jose": "^6.0.8",
+    "tsx": "^4.20.0",
+    "typescript": "~5.8.3",
+    "vitest": "^5.1.0"
+  }
+}

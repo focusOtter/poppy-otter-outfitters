@@ -1,0 +1,18 @@
+# Tunnels for `npm run tunnel` (ngrok agent v3). Your authtoken lives in ngrok's own default config
+# (`ngrok config add-authtoken <token>`); this file only lists the two tunnels.
+#
+# The free plan gives you one static domain. Reserve it in the ngrok dashboard (Domains), then put it in as
+# `domain:` on driftbean-web so the host doesn't change on every restart. The Carts API tunnel can keep its random
+# host: `npm run tunnel` writes both hosts into .env.local each time it starts.
+#
+# Note: ngrok's v3 docs mark the `tunnels` key as deprecated in favour of `endpoints`. If a newer agent rejects this
+# file, run `ngrok config check --config .ngrok.yml` and convert it with the same names and addresses.
+version: "3"
+tunnels:
+  driftbean-web:
+    proto: http
+    addr: 3000
+    # domain: your-name.ngrok-free.app
+  driftbean-api:
+    proto: http
+    addr: 4001

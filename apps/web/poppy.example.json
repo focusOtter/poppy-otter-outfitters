@@ -1,0 +1,50 @@
+{
+  "protocol_version": "1.0",
+  "organization": {
+    "name": "Otter Outfitters",
+    "domain": "",
+    "logo_uri": ""
+  },
+  "auth": {
+    "issuer": "https://YOUR_TENANT_DOMAIN/",
+    "disabled": false,
+    "scopes": {
+      "cart:write": {
+        "description": "Add and remove items in your cart",
+        "hints": {
+          "changes": "reversible",
+          "personal_data": true
+        }
+      },
+      "orders:read": {
+        "description": "See your orders and their status",
+        "hints": {
+          "changes": "none",
+          "personal_data": true
+        }
+      },
+      "orders:write": {
+        "description": "Place orders with your saved address and payment method",
+        "hints": {
+          "changes": "irreversible",
+          "personal_data": true
+        }
+      },
+      "poppy:browser-sign-in": {
+        "description": "Use the website on your behalf, with the permissions you approve"
+      }
+    }
+  },
+  "apis": [
+    {
+      "type": "openapi",
+      "url": "https://YOUR_API_HOST/openapi.json",
+      "description": "Cart and orders"
+    }
+  ],
+  "web": {
+    "browser_session_endpoint": "https://YOUR_TENANT_DOMAIN/poppy/YOUR_WEB_APP_CLIENT_ID/browser-session",
+    "disabled": false,
+    "unscoped": false
+  }
+}

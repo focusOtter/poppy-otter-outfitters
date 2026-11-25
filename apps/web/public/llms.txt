@@ -1,0 +1,18 @@
+# Otter Outfitters
+
+> An outdoor gear demo store that welcomes personal AI agents through the Personal Agent Protocol (Poppy 1.0). Sample data only; no real payments.
+
+## For agents
+- [Poppy discovery](/.well-known/poppy.json): this store's identity, issuer and scopes
+- [Protected resource metadata](/.well-known/oauth-protected-resource)
+
+## Shopping
+- [Catalog](/): every product, with photos and prices. Each product links to /products/<id>
+- [Search](/search?q=dry%20bag): `/search?q=<words>` lists matching products
+- [Cart](/cart), [checkout](/checkout) (pays with a simulated test card) and [orders](/orders)
+
+## Rules
+- You can browse and fill a cart as a guest.
+- Checking out needs the customer to approve you on the store's sign-in page; you then continue in their account.
+- Agents can't change account details such as the name, email or password.
+- The customer can see and disconnect you at /agents.

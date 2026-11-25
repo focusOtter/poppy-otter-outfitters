@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, starter]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/carts-api/package-lock.json
+            apps/web-express/package-lock.json
+
+      - name: Install
+        run: |
+          npm --prefix apps/carts-api ci --no-audit --no-fund
+          npm --prefix apps/web ci --no-audit --no-fund
+          npm --prefix apps/web-express ci --no-audit --no-fund
+
+      - name: No secrets in the repository
+        run: node scripts/check-secrets.mjs
+
+      - name: Links in the docs resolve
+        run: node scripts/check-links.mjs
+
+      - name: Typecheck and test
+        run: npm run check
+
+      - name: Script tests
+        run: node --test "scripts/test/*.test.mjs"
+
+      - name: Scripted agent (smoke test)
+        env:
+          AUTH0_DOMAIN: example.us.auth0.com
+          AUTH0_AUDIENCE: http://localhost:4000
+          CARTS_API_URL: http://localhost:4001
+          POPPY_TEST_AGENT: "1"
+          CARTS_API_DEV_TOOLS: "1"
+        run: |
+          npm --prefix apps/carts-api start &
+          for i in $(seq 1 30); do curl -sf http://localhost:4001/health && break; sleep 1; done
+          npm run smoke
+
+      - name: Build the storefront
+        env:
+          AUTH0_DOMAIN: example.us.auth0.com
+          AUTH0_CLIENT_ID: build-placeholder
+          AUTH0_CLIENT_SECRET: build-placeholder
+          AUTH0_SECRET: build-placeholder-build-placeholder-0123456789
+          AUTH0_AUDIENCE: http://localhost:4000
+          APP_BASE_URL: https://store.example.com
+        run: npm --prefix apps/web run build

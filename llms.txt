@@ -1,0 +1,26 @@
+# Drift Bean Demo: the Auth0 Poppy sample store
+
+> A small specialty coffee store (Next.js storefront + Express API) that personal AI agents can shop through the Personal Agent Protocol (Poppy, draft 1.0), secured by Auth0. Built on beta Auth0 SDKs. Run it locally in ten minutes; copy the parts you need.
+
+## Start here
+- [README](README.md): quickstart, commands, deploy options
+- [AGENTS.md](AGENTS.md): commands, rules and traps for coding agents
+
+## Guides
+- [Set up your Auth0 tenant](docs/tenant-setup.md): script, Auth0 CLI or dashboard
+- [Test with an agent](docs/testing.md): scripted agent, a person, or the Poppy Playground
+- [Add Poppy to your own app](docs/adopting.md): the few files to copy
+- [Architecture and API contract](docs/architecture.md)
+- [Deploy](docs/deploy.md): Vercel, plain Node
+- [Troubleshooting](docs/troubleshooting.md)
+- [Prompts for coding agents](docs/prompts.md)
+
+## Key source files
+- [apps/web/lib/auth0.ts](apps/web/lib/auth0.ts): turns Poppy on in Next.js
+- [apps/web/lib/poppy.ts](apps/web/lib/poppy.ts): who is driving, and which token to use
+- [apps/carts-api/src/app.ts](apps/carts-api/src/app.ts): request verification and routes
+- [apps/carts-api/src/policy.ts](apps/carts-api/src/policy.ts): what agents may do
+
+## Optional
+- [Poppy Playground](https://poppyplayground.dev): test your store with a protocol debugger
+- [Personal Agent Protocol](https://personalagentprotocol.org)

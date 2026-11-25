@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 428" role="img" aria-labelledby="otter-title otter-desc">
+  <title id="otter-title">Otter Outfitters architecture</title>
+  <desc id="otter-desc">Poppy Playground starts a browser join on the Next.js storefront, which uses Auth0 for sign-in and consent. The agent and storefront send requests to the Express API, which persists data in Neon.</desc>
+  <defs>
+    <marker id="otter-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0l8 4-8 4z" fill="#486563"/>
+    </marker>
+  </defs>
+  <rect width="840" height="428" rx="20" fill="#f4f7ef"/>
+  <text x="32" y="43" fill="#486563" font-family="monospace" font-size="12" letter-spacing="1.5">PHASE 1  /  PERSONAL AGENTS</text>
+  <text x="32" y="83" fill="#18383e" font-family="Georgia, serif" font-size="34">Otter Outfitters</text>
+  <g fill="none" stroke="#486563" stroke-width="1.5" marker-end="url(#otter-arrow)">
+    <path d="M224 164h152"/>
+    <path d="M224 200h32q8 0 8 8v96q0 8 8 8h104"/>
+    <path d="M468 228v44"/>
+    <path d="M560 164h80"/>
+    <path d="M560 312h80"/>
+  </g>
+  <g stroke="#bed0c5" fill="#e4ede4">
+    <rect x="32" y="128" width="192" height="100" rx="12"/>
+    <rect x="376" y="128" width="184" height="100" rx="12"/>
+    <rect x="640" y="128" width="168" height="100" rx="12"/>
+    <rect x="376" y="272" width="184" height="100" rx="12" fill="#f9e5c0"/>
+    <rect x="640" y="272" width="168" height="100" rx="12"/>
+  </g>
+  <g fill="#f4f7ef">
+    <rect x="247" y="150" width="106" height="26"/>
+    <rect x="277" y="299" width="80" height="26"/>
+  </g>
+  <g fill="#486563" font-family="monospace" font-size="11" text-anchor="middle">
+    <text x="300" y="168">BROWSER JOIN</text>
+    <text x="317" y="316">AGENT API</text>
+  </g>
+  <g fill="#18383e" font-family="sans-serif" font-size="17" font-weight="700">
+    <text x="48" y="166">Poppy Playground</text>
+    <text x="392" y="166">Next.js store</text>
+    <text x="656" y="166">Auth0 tenant</text>
+    <text x="392" y="310">Express API</text>
+    <text x="656" y="310">Neon Postgres</text>
+  </g>
+  <g fill="#486563" font-family="sans-serif" font-size="13">
+    <text x="48" y="192">Guest agent</text>
+    <text x="392" y="192">Shop and activity</text>
+    <text x="656" y="192">Sign-in and consent</text>
+    <text x="392" y="336">Session verification</text>
+    <text x="656" y="334">Catalog, carts,</text>
+    <text x="656" y="351">orders and activity</text>
+  </g>
+  <text x="32" y="405" fill="#486563" font-family="monospace" font-size="11">→ REQUEST DIRECTION</text>
+</svg>
